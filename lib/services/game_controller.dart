@@ -21,6 +21,11 @@ class GameController {
   late List<String> _words;
   int _wordIndex = 0;
 
+  String _roundSessionId = '';
+  String get roundSessionId => _roundSessionId;
+
+  int get cardIndex => _wordIndex;
+
   int _countdownValue = 3;
   int get countdownValue => _countdownValue;
 
@@ -53,6 +58,7 @@ class GameController {
 
   /// Start the pre-round countdown, then the game.
   void start() {
+    _roundSessionId = DateTime.now().microsecondsSinceEpoch.toString();
     _words = deck.shuffledItems;
     _wordIndex = 0;
     _score = 0;
@@ -122,16 +128,22 @@ class GameController {
   }
 
   /// Record the current word as correct and advance.
-  void markCorrect() {
+  void markCorrect({int? expectedCardIndex, String? expectedSessionId}) {
     if (_phase != GamePhase.playing || _isFinished) return;
+    if (expectedSessionId != null && expectedSessionId != _roundSessionId) return;
+    if (expectedCardIndex != null && expectedCardIndex != _wordIndex) return;
+
     _attempts.add(WordAttempt(word: currentWord, result: WordResult.correct));
     _score++;
     _advance();
   }
 
   /// Record the current word as passed and advance.
-  void markPass() {
+  void markPass({int? expectedCardIndex, String? expectedSessionId}) {
     if (_phase != GamePhase.playing || _isFinished) return;
+    if (expectedSessionId != null && expectedSessionId != _roundSessionId) return;
+    if (expectedCardIndex != null && expectedCardIndex != _wordIndex) return;
+
     _attempts.add(WordAttempt(word: currentWord, result: WordResult.passed));
     _advance();
   }
