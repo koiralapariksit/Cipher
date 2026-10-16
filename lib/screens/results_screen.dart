@@ -1,9 +1,10 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/deck.dart';
 import '../models/game_round.dart';
 import '../services/storage_service.dart';
-import '../theme/luxury_theme.dart';
+import '../theme/app_theme.dart';
 import 'gameplay_screen.dart';
 import 'home_screen.dart';
 
@@ -82,325 +83,351 @@ class _ResultsScreenState extends State<ResultsScreen> {
       _ => round.attempts,
     };
 
-    return Scaffold(
-      backgroundColor: kBlack,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Header Row ──
-              Row(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: appBgBottom,
+        body: Container(
+          decoration: appBackgroundDecoration,
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  LuxuryRoundButton(
-                    icon: Icons.arrow_back_rounded,
-                    tooltip: 'Back to Decks',
-                    onTap: _goHome,
-                  ),
-                  const SizedBox(width: 14),
-                  Text(
-                    'Round Complete',
-                    style: luxuryFont(26, weight: FontWeight.w300, spacing: 0.5),
-                  ),
-                  const Spacer(),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: luxuryPanel(radius: 8),
-                    child: Text(
-                      round.deckName,
-                      style: luxuryFont(13,
-                          weight: FontWeight.w500, color: kGold),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              // ── Hero Score Card ──
-              Container(
-                width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
-                decoration: luxuryPanel(radius: 8, highlight: true),
-                child: Column(
-                  children: [
-                    if (_isNewHighScore) ...[
+                  // ── Header Row ──
+                  Row(
+                    children: [
+                      AppIconButton(
+                        icon: Icons.arrow_back_rounded,
+                        tooltip: 'Back to Decks',
+                        size: 40,
+                        onTap: _goHome,
+                      ),
+                      const SizedBox(width: 14),
+                      Text(
+                        'Round Complete',
+                        style: appFont(24,
+                            weight: FontWeight.w700, spacing: -0.6),
+                      ),
+                      const Spacer(),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 4),
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: kSelectedFill,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: kGold.withValues(alpha: 0.8),
-                            width: 0.8,
-                          ),
+                          color: appTile,
+                          borderRadius: BorderRadius.circular(appRadius),
+                          border: Border.all(color: appLine, width: 0.8),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.emoji_events_rounded,
-                                color: kGold, size: 14),
-                            const SizedBox(width: 6),
-                            Text(
-                              'NEW HIGH SCORE',
-                              style: luxuryFont(11,
-                                  weight: FontWeight.w500,
-                                  spacing: 1.4,
-                                  color: kGold),
-                            ),
-                          ],
+                        child: Text(
+                          round.deckName,
+                          style: appFont(13,
+                              weight: FontWeight.w600, color: appText),
                         ),
                       ),
-                      const SizedBox(height: 10),
                     ],
+                  ),
 
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  const SizedBox(height: 16),
+
+                  // ── Hero Score Card ──
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 18, horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: appTile,
+                      borderRadius: BorderRadius.circular(appRadius),
+                      border: Border.all(color: appLine, width: 0.8),
+                    ),
+                    child: Column(
                       children: [
-                        _StatColumn(
-                          value: '${round.correctCount}',
-                          label: 'CORRECT',
-                          color: kCorrectGreen,
-                          icon: Icons.check_circle_outline_rounded,
-                        ),
-                        Container(
-                          width: 0.8,
-                          height: 38,
-                          color: kGold.withValues(alpha: 0.25),
-                        ),
-                        _StatColumn(
-                          value: '${round.passedCount}',
-                          label: 'PASSED',
-                          color: kPassAmber,
-                          icon: Icons.highlight_off_rounded,
-                        ),
-                        Container(
-                          width: 0.8,
-                          height: 38,
-                          color: kGold.withValues(alpha: 0.25),
-                        ),
-                        _StatColumn(
-                          value: '${round.accuracyPercentage}%',
-                          label: 'ACCURACY',
-                          color: kGold,
-                          icon: Icons.track_changes_rounded,
-                        ),
-                        Container(
-                          width: 0.8,
-                          height: 38,
-                          color: kGold.withValues(alpha: 0.25),
-                        ),
-                        _StatColumn(
-                          value: '$_highScore',
-                          label: 'BEST',
-                          color: kGold,
-                          icon: Icons.emoji_events_outlined,
+                        if (_isNewHighScore) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: appField,
+                              borderRadius: BorderRadius.circular(appRadius),
+                              border: Border.all(
+                                color: appLine,
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.emoji_events_rounded,
+                                    color: appText, size: 14),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'NEW HIGH SCORE',
+                                  style: appFont(11,
+                                      weight: FontWeight.w600,
+                                      spacing: 0.8,
+                                      color: appText),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _StatColumn(
+                              value: '${round.correctCount}',
+                              label: 'CORRECT',
+                              color: appCorrect,
+                              icon: Icons.check_circle_outline_rounded,
+                            ),
+                            Container(
+                              width: 0.8,
+                              height: 38,
+                              color: appLine,
+                            ),
+                            _StatColumn(
+                              value: '${round.passedCount}',
+                              label: 'PASSED',
+                              color: appPass,
+                              icon: Icons.highlight_off_rounded,
+                            ),
+                            Container(
+                              width: 0.8,
+                              height: 38,
+                              color: appLine,
+                            ),
+                            _StatColumn(
+                              value: '${round.accuracyPercentage}%',
+                              label: 'ACCURACY',
+                              color: appText,
+                              icon: Icons.track_changes_rounded,
+                            ),
+                            Container(
+                              width: 0.8,
+                              height: 38,
+                              color: appLine,
+                            ),
+                            _StatColumn(
+                              value: '$_highScore',
+                              label: 'BEST',
+                              color: appText,
+                              icon: Icons.emoji_events_outlined,
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 18),
-
-              // ── Filter Chips ──
-              Row(
-                children: [
-                  _ResultFilterChip(
-                    label: 'All (${round.totalAttempts})',
-                    isSelected: _selectedFilterIndex == 0,
-                    onTap: () => setState(() => _selectedFilterIndex = 0),
                   ),
-                  const SizedBox(width: 8),
-                  _ResultFilterChip(
-                    label: 'Correct (${round.correctCount})',
-                    isSelected: _selectedFilterIndex == 1,
-                    accentColor: kCorrectGreen,
-                    onTap: () => setState(() => _selectedFilterIndex = 1),
+
+                  const SizedBox(height: 16),
+
+                  // ── Filter Chips ──
+                  Row(
+                    children: [
+                      _ResultFilterChip(
+                        label: 'All (${round.totalAttempts})',
+                        isSelected: _selectedFilterIndex == 0,
+                        onTap: () => setState(() => _selectedFilterIndex = 0),
+                      ),
+                      const SizedBox(width: 8),
+                      _ResultFilterChip(
+                        label: 'Correct (${round.correctCount})',
+                        isSelected: _selectedFilterIndex == 1,
+                        accentColor: appCorrect,
+                        onTap: () => setState(() => _selectedFilterIndex = 1),
+                      ),
+                      const SizedBox(width: 8),
+                      _ResultFilterChip(
+                        label: 'Passed (${round.passedCount})',
+                        isSelected: _selectedFilterIndex == 2,
+                        accentColor: appPass,
+                        onTap: () => setState(() => _selectedFilterIndex = 2),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  _ResultFilterChip(
-                    label: 'Passed (${round.passedCount})',
-                    isSelected: _selectedFilterIndex == 2,
-                    accentColor: kPassAmber,
-                    onTap: () => setState(() => _selectedFilterIndex = 2),
+
+                  const SizedBox(height: 14),
+
+                  // ── Section Header ──
+                  AppSectionHeader(
+                    title: 'Words Played',
+                    trailing: '${filteredAttempts.length} shown',
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // ── Scrollable Words List ──
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: appTile,
+                        borderRadius: BorderRadius.circular(appRadius),
+                        border: Border.all(color: appLine, width: 0.8),
+                      ),
+                      child: filteredAttempts.isEmpty
+                          ? Center(
+                              child: Text(
+                                _selectedFilterIndex == 1
+                                    ? 'No correct words this round.'
+                                    : _selectedFilterIndex == 2
+                                        ? 'No passed words — clean round!'
+                                        : 'No words played',
+                                style: appFont(14, color: appTextDim),
+                              ),
+                            )
+                          : ClipRRect(
+                              borderRadius: BorderRadius.circular(appRadius),
+                              child: ListView.separated(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 4),
+                                itemCount: filteredAttempts.length,
+                                separatorBuilder: (_, _) => const Divider(
+                                  height: 1,
+                                  color: appLine,
+                                ),
+                                itemBuilder: (_, index) {
+                                  final attempt = filteredAttempts[index];
+                                  final isCorrect =
+                                      attempt.result == WordResult.correct;
+                                  final color =
+                                      isCorrect ? appCorrect : appPass;
+
+                                  return ListTile(
+                                    dense: true,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 14, vertical: 2),
+                                    leading: Container(
+                                      width: 26,
+                                      height: 26,
+                                      decoration: BoxDecoration(
+                                        borderRadius:
+                                            BorderRadius.circular(appRadius),
+                                        color: color.withValues(alpha: 0.15),
+                                        border: Border.all(
+                                          color: color.withValues(alpha: 0.5),
+                                          width: 0.8,
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        isCorrect
+                                            ? Icons.check_rounded
+                                            : Icons.close_rounded,
+                                        color: color,
+                                        size: 15,
+                                      ),
+                                    ),
+                                    title: Text(
+                                      attempt.word,
+                                      style: appFont(15,
+                                          weight: FontWeight.w500,
+                                          color: appText),
+                                    ),
+                                    trailing: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: isCorrect
+                                            ? color.withValues(alpha: 0.15)
+                                            : appField,
+                                        borderRadius:
+                                            BorderRadius.circular(appRadius),
+                                        border: Border.all(
+                                          color: isCorrect
+                                              ? color.withValues(alpha: 0.4)
+                                              : appLine,
+                                          width: 0.8,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        isCorrect ? '+1 Point' : 'Pass',
+                                        style: appFont(
+                                          11,
+                                          weight: FontWeight.w600,
+                                          color: isCorrect ? color : appTextDim,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // ── Bottom Action Buttons ──
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 4,
+                        child: GestureDetector(
+                          onTap: _goHome,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            decoration: BoxDecoration(
+                              color: appTile,
+                              borderRadius: BorderRadius.circular(appRadius),
+                              border: Border.all(color: appLine, width: 0.8),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.grid_view_rounded,
+                                    color: appTextDim, size: 18),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'ALL DECKS',
+                                  style: appFont(
+                                    13,
+                                    weight: FontWeight.w600,
+                                    spacing: 0.5,
+                                    color: appTextDim,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 6,
+                        child: GestureDetector(
+                          onTap: _playAgain,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            decoration: BoxDecoration(
+                              color: appText,
+                              borderRadius: BorderRadius.circular(appRadius),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.replay_rounded,
+                                    color: appBgBottom, size: 19),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'PLAY AGAIN',
+                                  style: appFont(
+                                    14,
+                                    weight: FontWeight.w600,
+                                    spacing: 0.5,
+                                    color: appBgBottom,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-
-              const SizedBox(height: 14),
-
-              // ── Section Header ──
-              LuxurySectionHeader(
-                title: 'Words Played',
-                trailing: '${filteredAttempts.length} shown',
-              ),
-
-              const SizedBox(height: 10),
-
-              // ── Scrollable Words List ──
-              Expanded(
-                child: Container(
-                  decoration: luxuryPanel(radius: 8),
-                  child: filteredAttempts.isEmpty
-                      ? Center(
-                          child: Text(
-                            _selectedFilterIndex == 1
-                                ? 'No correct words this round.'
-                                : _selectedFilterIndex == 2
-                                    ? 'No passed words — clean round!'
-                                    : 'No words played',
-                            style: luxuryFont(14, color: kTextDim),
-                          ),
-                        )
-                      : ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: ListView.separated(
-                            padding: const EdgeInsets.symmetric(vertical: 6),
-                            itemCount: filteredAttempts.length,
-                            separatorBuilder: (_, _) => Divider(
-                              height: 1,
-                              color: kGold.withValues(alpha: 0.12),
-                            ),
-                            itemBuilder: (_, index) {
-                              final attempt = filteredAttempts[index];
-                              final isCorrect =
-                                  attempt.result == WordResult.correct;
-                              final color =
-                                  isCorrect ? kCorrectGreen : kPassAmber;
-
-                              return ListTile(
-                                dense: true,
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 2),
-                                leading: Container(
-                                  width: 28,
-                                  height: 28,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(6),
-                                    color: color.withValues(alpha: 0.12),
-                                    border: Border.all(
-                                      color: color.withValues(alpha: 0.45),
-                                      width: 0.8,
-                                    ),
-                                  ),
-                                  child: Icon(
-                                    isCorrect
-                                        ? Icons.check_rounded
-                                        : Icons.close_rounded,
-                                    color: color,
-                                    size: 16,
-                                  ),
-                                ),
-                                title: Text(
-                                  attempt.word,
-                                  style: luxuryFont(15,
-                                      weight: FontWeight.w400, color: kText),
-                                ),
-                                trailing: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: isCorrect
-                                        ? color.withValues(alpha: 0.12)
-                                        : Colors.white.withValues(alpha: 0.04),
-                                    borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(
-                                      color: isCorrect
-                                            ? color.withValues(alpha: 0.4)
-                                          : Colors.white10,
-                                      width: 0.8,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    isCorrect ? '+1 Point' : 'Pass',
-                                    style: luxuryFont(
-                                      11,
-                                      weight: FontWeight.w500,
-                                      color: isCorrect ? color : kTextDim,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // ── Bottom Action Buttons ──
-              Row(
-                children: [
-                  Expanded(
-                    flex: 4,
-                    child: GestureDetector(
-                      onTap: _goHome,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        decoration: luxuryPanel(radius: 8),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.grid_view_rounded,
-                                color: kTextDim, size: 18),
-                            const SizedBox(width: 8),
-                            Text(
-                              'ALL DECKS',
-                              style: luxuryFont(
-                                13,
-                                weight: FontWeight.w500,
-                                spacing: 1.0,
-                                color: kTextDim,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 6,
-                    child: GestureDetector(
-                      onTap: _playAgain,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        decoration: luxuryPanel(
-                          radius: 8,
-                          highlight: true,
-                          fillTop: const Color(0xFF241F14),
-                          fillBottom: const Color(0xFF14110A),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.replay_rounded,
-                                color: kGold, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              'PLAY AGAIN',
-                              style: luxuryFont(
-                                14,
-                                weight: FontWeight.w500,
-                                spacing: 1.2,
-                                color: kGold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -433,10 +460,11 @@ class _StatColumn extends StatelessWidget {
             const SizedBox(width: 5),
             Text(
               value,
-              style: luxuryFont(
+              style: appFont(
                 22,
-                weight: FontWeight.w400,
+                weight: FontWeight.w700,
                 color: color,
+                spacing: -0.5,
               ),
             ),
           ],
@@ -444,11 +472,11 @@ class _StatColumn extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           label,
-          style: luxuryFont(
+          style: appFont(
             10,
-            weight: FontWeight.w500,
-            spacing: 1.2,
-            color: kTextDim,
+            weight: FontWeight.w600,
+            spacing: 0.8,
+            color: appTextDim,
           ),
         ),
       ],
@@ -471,7 +499,6 @@ class _ResultFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeColor = accentColor ?? kGold;
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
@@ -479,21 +506,18 @@ class _ResultFilterChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 8),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: isSelected ? kSelectedFill : const Color(0xFF101010),
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(
-              color: isSelected
-                  ? activeColor.withValues(alpha: 0.85)
-                  : Colors.white.withValues(alpha: 0.08),
-              width: isSelected ? 1.0 : 0.8,
-            ),
+            color: isSelected ? appText : appTile,
+            borderRadius: BorderRadius.circular(appRadius),
+            border: isSelected
+                ? null
+                : Border.all(color: appLine, width: 0.8),
           ),
           child: Text(
             label,
-            style: luxuryFont(
+            style: appFont(
               12,
-              weight: FontWeight.w500,
-              color: isSelected ? activeColor : kTextDim,
+              weight: isSelected ? FontWeight.w600 : FontWeight.w400,
+              color: isSelected ? appBgBottom : appTextDim,
             ),
           ),
         ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 import 'services/storage_service.dart';
-import 'theme/luxury_theme.dart';
+import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,11 +18,11 @@ class HeadsGuessApp extends StatelessWidget {
       title: 'Heads Guess',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: kBlack,
+        scaffoldBackgroundColor: appBgBottom,
         colorScheme: const ColorScheme.dark(
-          primary: kGold,
-          secondary: kGold,
-          surface: kPanelBottom,
+          primary: appText,
+          secondary: appText,
+          surface: appBgBottom,
         ),
       ),
       home: const HomeScreen(),
