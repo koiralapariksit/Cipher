@@ -7,21 +7,21 @@ import '../models/game_round.dart';
 import '../services/game_controller.dart';
 import '../services/sensor_service.dart';
 import '../services/storage_service.dart';
-import '../theme/luxury_theme.dart';
+import '../theme/app_theme.dart';
 import 'results_screen.dart';
 
 /// Full-screen gameplay:
 /// - Strictly locks to landscape orientation on entry; restores portrait on exit.
 /// - Keeps screen awake with WakelockPlus.
 /// - 3-2-1 "Place on Forehead" countdown with large numerals and haptic ticks.
-/// - High-contrast responsive Jost typography that never clips in landscape.
-/// - Subtle visual feedback: Emerald on Correct (+1), Amber on Pass (0).
+/// - High-contrast responsive Bricolage Grotesque typography that never clips in landscape.
+/// - Razor-sharp 3px word-level feedback container ("Correct: [Word]" / "Pass: [Word]").
 /// - Exact 3-axis forehead sensor tilt with low-pass gravity filter and lockout.
 /// - Live telemetry debug indicator showing pitch angle degrees and TiltZone.
 /// - Lifecycle handling (WidgetsBindingObserver): auto-pause timer and sensors on background/minimize.
 /// - Modal "Game Paused" overlay with Resume and Quit to Menu options.
 /// - Tilt axis invert toggle in the top bar.
-/// - Luxury manual fallback buttons on left (PASS) & right (CORRECT) edges.
+/// - Manual fallback buttons on left (PASS) & right (CORRECT) edges.
 class GameplayScreen extends StatefulWidget {
   final Deck deck;
   final int timerSeconds;
@@ -42,7 +42,7 @@ class _GameplayScreenState extends State<GameplayScreen>
   late final SensorService _sensor;
   final StorageService _storage = StorageService();
 
-  // Visual feedback flash animation
+  // Visual feedback flash state
   Color? _flashColor;
   String? _flashLabel;
   Timer? _flashTimer;
@@ -58,10 +58,9 @@ class _GameplayScreenState extends State<GameplayScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    // 1. Strict Landscape Lock
+    // 1. Strict Landscape Lock (strictly landscapeLeft to ensure fixed axis signs)
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
     ]);
 
     // 2. Hide System UI & Enable Wakelock
@@ -123,11 +122,11 @@ class _GameplayScreenState extends State<GameplayScreen>
 
     _flashTimer?.cancel();
     setState(() {
-      _flashColor = isCorrect ? kCorrectGreen : kPassAmber;
+      _flashColor = isCorrect ? appCorrect : appPass;
       _flashLabel = isCorrect ? 'Correct: $word' : 'Pass: $word';
     });
 
-    _flashTimer = Timer(const Duration(milliseconds: 450), () {
+    _flashTimer = Timer(const Duration(milliseconds: 550), () {
       if (mounted) {
         setState(() {
           _flashColor = null;
@@ -146,15 +145,15 @@ class _GameplayScreenState extends State<GameplayScreen>
       SnackBar(
         content: Text(
           _sensor.invertTilt ? 'Tilt Axis Inverted' : 'Normal Tilt Axis',
-          style: luxuryFont(13, color: kText),
+          style: appFont(13, color: appText),
         ),
         duration: const Duration(seconds: 1),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-          side: BorderSide(color: kGold.withValues(alpha: 0.4), width: 0.8),
+          borderRadius: BorderRadius.circular(appRadius),
+          side: const BorderSide(color: appLine, width: 0.8),
         ),
-        backgroundColor: kPanelTop,
+        backgroundColor: appBgMid,
       ),
     );
   }
@@ -257,85 +256,103 @@ class _GameplayScreenState extends State<GameplayScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: kBlack,
-      body: Stack(
-        children: [
-          // Base game screen body
-          SafeArea(
-            child: _buildBody(),
-          ),
-
-          // Refined Visual Flash Overlay (Emerald for Correct, Amber for Pass)
-          if (_flashColor != null)
-            Positioned.fill(
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                decoration: BoxDecoration(
-                  color: _flashColor!.withValues(alpha: 0.90),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  _flashLabel ?? '',
-                  textAlign: TextAlign.center,
-                  style: luxuryFont(
-                    54,
-                    weight: FontWeight.w500,
-                    spacing: 2.0,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
+      backgroundColor: appBgBottom,
+      body: Container(
+        decoration: appBackgroundDecoration,
+        child: Stack(
+          children: [
+            // Base game screen body
+            SafeArea(
+              child: _buildBody(),
             ),
 
-          // Live Tilt Debug Indicator (Centered Subtle Low-Profile Luxury Pill)
-          Positioned(
-            bottom: 6,
-            left: 0,
-            right: 0,
-            child: ValueListenableBuilder<({double pitch, TiltZone zone})>(
-              valueListenable: _sensorDebugNotifier,
-              builder: (context, data, _) {
-                final isNeutral = data.zone == TiltZone.neutral;
-                final isCorrect = data.zone == TiltZone.downCorrect;
-                final isPass = data.zone == TiltZone.upPass;
-                final isInvalid = data.zone == TiltZone.invalidOrientation;
-
-                final Color badgeColor = isCorrect
-                    ? kCorrectGreen
-                    : (isPass
-                        ? kPassAmber
-                        : (isNeutral
-                            ? kGold
-                            : (isInvalid ? const Color(0xFFEF4444) : kTextDim)));
-
-                return Center(
-                  child: IgnorePointer(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 4),
-                      decoration: luxuryPanel(
-                        radius: 6,
-                        borderColor: badgeColor.withValues(alpha: 0.45),
+            // Razor-sharp 3px Word-level Feedback Indicator Overlay
+            if (_flashLabel != null)
+              Positioned(
+                top: 56,
+                left: 120,
+                right: 120,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _flashColor?.withValues(alpha: 0.20) ?? appTile,
+                      borderRadius: BorderRadius.circular(appRadius),
+                      border: Border.all(
+                        color: _flashColor ?? appLine,
+                        width: 0.8,
                       ),
-                      child: Text(
-                        'Pitch: ${data.pitch.toStringAsFixed(0)}° • ${data.zone.name.toUpperCase()}',
-                        style: luxuryFont(
-                          11,
-                          color: badgeColor,
-                          weight: FontWeight.w500,
-                          spacing: 0.5,
-                        ),
+                    ),
+                    child: Text(
+                      _flashLabel!,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: appFont(
+                        18,
+                        weight: FontWeight.w700,
+                        color: _flashColor ?? appText,
+                        spacing: -0.2,
                       ),
                     ),
                   ),
-                );
-              },
-            ),
-          ),
+                ),
+              ),
 
-          // Full-screen Paused Modal Overlay
-          if (_controller.phase == GamePhase.paused) _buildPauseOverlay(),
-        ],
+            // Live Tilt Debug Indicator (Centered Subtle Low-Profile 3px Pill)
+            Positioned(
+              bottom: 6,
+              left: 0,
+              right: 0,
+              child: ValueListenableBuilder<({double pitch, TiltZone zone})>(
+                valueListenable: _sensorDebugNotifier,
+                builder: (context, data, _) {
+                  final isNeutral = data.zone == TiltZone.neutral;
+                  final isCorrect = data.zone == TiltZone.downCorrect;
+                  final isPass = data.zone == TiltZone.upPass;
+                  final isInvalid = data.zone == TiltZone.invalidOrientation;
+
+                  final Color badgeColor = isCorrect
+                      ? appCorrect
+                      : (isPass
+                          ? appPass
+                          : (isNeutral
+                              ? appText
+                              : (isInvalid ? const Color(0xFFEF4444) : appTextDim)));
+
+                  return Center(
+                    child: IgnorePointer(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: appField,
+                          borderRadius: BorderRadius.circular(appRadius),
+                          border: Border.all(
+                            color: badgeColor.withValues(alpha: 0.45),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Text(
+                          'Pitch: ${data.pitch.toStringAsFixed(0)}° • ${data.zone.name.toUpperCase()}',
+                          style: appFont(
+                            11,
+                            color: badgeColor,
+                            weight: FontWeight.w500,
+                            spacing: 0.3,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            // Full-screen Paused Modal Overlay
+            if (_controller.phase == GamePhase.paused) _buildPauseOverlay(),
+          ],
+        ),
       ),
     );
   }
@@ -344,7 +361,7 @@ class _GameplayScreenState extends State<GameplayScreen>
     switch (_controller.phase) {
       case GamePhase.idle:
         return const Center(
-          child: CircularProgressIndicator(color: kGold),
+          child: CircularProgressIndicator(color: appText),
         );
       case GamePhase.countdown:
         return _buildCountdown();
@@ -358,17 +375,17 @@ class _GameplayScreenState extends State<GameplayScreen>
             children: [
               Text(
                 "TIME'S UP!",
-                style: luxuryFont(
+                style: appFont(
                   52,
-                  weight: FontWeight.w300,
-                  spacing: 2.0,
-                  color: kGold,
+                  weight: FontWeight.w700,
+                  spacing: -1.0,
+                  color: appText,
                 ),
               ),
               const SizedBox(height: 12),
               Text(
                 'Calculating results...',
-                style: luxuryFont(16, color: kTextDim),
+                style: appFont(16, color: appTextDim),
               ),
             ],
           ),
@@ -383,41 +400,49 @@ class _GameplayScreenState extends State<GameplayScreen>
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-            decoration: luxuryPanel(radius: 8, highlight: true),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: appTile,
+              borderRadius: BorderRadius.circular(appRadius),
+              border: Border.all(color: appLine, width: 0.8),
+            ),
             child: Text(
-              widget.deck.name.toUpperCase(),
-              style: luxuryFont(15, weight: FontWeight.w500, spacing: 1.5, color: kGold),
+              widget.deck.name,
+              style: appFont(14, weight: FontWeight.w600, color: appText),
             ),
           ),
-          const SizedBox(height: 10),
-          // Large countdown numeral in Jost
+          const SizedBox(height: 8),
+          // Large countdown numeral in Bricolage Grotesque
           Text(
             '${_controller.countdownValue}',
-            style: luxuryFont(
+            style: appFont(
               100,
-              weight: FontWeight.w300,
-              color: kGold,
-              spacing: -1.0,
+              weight: FontWeight.w700,
+              color: appText,
+              spacing: -2.0,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            decoration: luxuryPanel(radius: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+            decoration: BoxDecoration(
+              color: appField,
+              borderRadius: BorderRadius.circular(appRadius),
+              border: Border.all(color: appLine, width: 0.8),
+            ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(Icons.phone_android_rounded,
-                    color: kGold, size: 20),
+                    color: appTextDim, size: 18),
                 const SizedBox(width: 8),
                 Text(
                   'PLACE ON FOREHEAD',
-                  style: luxuryFont(
+                  style: appFont(
                     13,
-                    weight: FontWeight.w500,
-                    spacing: 1.8,
-                    color: kText,
+                    weight: FontWeight.w600,
+                    spacing: 0.8,
+                    color: appText,
                   ),
                 ),
               ],
@@ -443,12 +468,16 @@ class _GameplayScreenState extends State<GameplayScreen>
               _buildPillTimer(_controller.timeRemaining),
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                decoration: luxuryPanel(radius: 8),
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: appTile,
+                  borderRadius: BorderRadius.circular(appRadius),
+                  border: Border.all(color: appLine, width: 0.8),
+                ),
                 child: Text(
                   widget.deck.name,
-                  style: luxuryFont(14,
-                      weight: FontWeight.w500, color: kText),
+                  style: appFont(14,
+                      weight: FontWeight.w600, color: appText),
                 ),
               ),
               Row(
@@ -456,18 +485,19 @@ class _GameplayScreenState extends State<GameplayScreen>
                 children: [
                   _buildScoreBadge(_controller.score),
                   const SizedBox(width: 8),
-                  LuxuryRoundButton(
+                  AppIconButton(
                     icon: Icons.swap_vert_rounded,
                     tooltip: 'Invert Tilt Axis',
-                    size: 38,
-                    iconColor: _sensor.invertTilt ? kPassAmber : kGold,
+                    size: 36,
+                    iconColor: _sensor.invertTilt ? appPass : appTextDim,
                     onTap: _toggleInvertTilt,
                   ),
                   const SizedBox(width: 8),
-                  LuxuryRoundButton(
+                  AppIconButton(
                     icon: Icons.pause_rounded,
                     tooltip: 'Pause game',
-                    size: 38,
+                    size: 36,
+                    iconColor: appTextDim,
                     onTap: () {
                       _sensor.stopListening();
                       _controller.pause();
@@ -486,10 +516,10 @@ class _GameplayScreenState extends State<GameplayScreen>
               children: [
                 // Left Thumb PASS Button
                 if (showButtons)
-                  _LuxuryThumbButton(
+                  _ThumbButton(
                     label: 'PASS',
                     sublabel: 'Tilt Up ↑',
-                    accentColor: kPassAmber,
+                    accentColor: appPass,
                     icon: Icons.close_rounded,
                     onTap: _handleManualPass,
                   ),
@@ -498,10 +528,14 @@ class _GameplayScreenState extends State<GameplayScreen>
                 Expanded(
                   child: Container(
                     margin: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                        horizontal: 8, vertical: 4),
                     padding: const EdgeInsets.symmetric(
                         horizontal: 24, vertical: 12),
-                    decoration: luxuryPanel(radius: 8, highlight: true),
+                    decoration: BoxDecoration(
+                      color: appTile,
+                      borderRadius: BorderRadius.circular(appRadius),
+                      border: Border.all(color: appLine, width: 0.8),
+                    ),
                     child: Center(
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
@@ -511,11 +545,11 @@ class _GameplayScreenState extends State<GameplayScreen>
                             _controller.currentWord,
                             textAlign: TextAlign.center,
                             maxLines: 2,
-                            style: luxuryFont(
-                              54,
-                              weight: FontWeight.w400,
-                              color: kText,
-                              spacing: 0.5,
+                            style: appFont(
+                              56,
+                              weight: FontWeight.w700,
+                              color: appText,
+                              spacing: -1.0,
                             ),
                           ),
                         ),
@@ -526,10 +560,10 @@ class _GameplayScreenState extends State<GameplayScreen>
 
                 // Right Thumb CORRECT Button
                 if (showButtons)
-                  _LuxuryThumbButton(
+                  _ThumbButton(
                     label: 'CORRECT',
                     sublabel: 'Tilt Down ↓',
-                    accentColor: kCorrectGreen,
+                    accentColor: appCorrect,
                     icon: Icons.check_rounded,
                     onTap: _handleManualCorrect,
                   ),
@@ -543,13 +577,15 @@ class _GameplayScreenState extends State<GameplayScreen>
 
   Widget _buildPillTimer(int seconds) {
     final isUrgent = seconds <= 10;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      decoration: luxuryPanel(
-        radius: 8,
-        borderColor: isUrgent ? kPassAmber : kGold.withValues(alpha: 0.8),
-        fillTop: isUrgent ? const Color(0xFF2E150A) : null,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: isUrgent ? appPass.withValues(alpha: 0.2) : appField,
+        borderRadius: BorderRadius.circular(appRadius),
+        border: Border.all(
+          color: isUrgent ? appPass : appLine,
+          width: 0.8,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -557,15 +593,15 @@ class _GameplayScreenState extends State<GameplayScreen>
           Icon(
             isUrgent ? Icons.timer_rounded : Icons.timer_outlined,
             size: 16,
-            color: isUrgent ? kPassAmber : kGold,
+            color: isUrgent ? appPass : appTextDim,
           ),
           const SizedBox(width: 6),
           Text(
             '${seconds}s',
-            style: luxuryFont(
-              16,
-              weight: FontWeight.w500,
-              color: isUrgent ? kPassAmber : kGold,
+            style: appFont(
+              15,
+              weight: FontWeight.w600,
+              color: isUrgent ? appPass : appText,
             ),
           ),
         ],
@@ -575,16 +611,20 @@ class _GameplayScreenState extends State<GameplayScreen>
 
   Widget _buildScoreBadge(int score) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      decoration: luxuryPanel(radius: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: appField,
+        borderRadius: BorderRadius.circular(appRadius),
+        border: Border.all(color: appLine, width: 0.8),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.star_rounded, size: 18, color: kGold),
+          const Icon(Icons.star_rounded, size: 16, color: appText),
           const SizedBox(width: 6),
           Text(
             '$score',
-            style: luxuryFont(16, weight: FontWeight.w500, color: kGold),
+            style: appFont(15, weight: FontWeight.w600, color: appText),
           ),
         ],
       ),
@@ -594,40 +634,48 @@ class _GameplayScreenState extends State<GameplayScreen>
   // ── Full-screen Pause Modal Overlay ──────────────────────────────────────
   Widget _buildPauseOverlay() {
     return Container(
-      color: Colors.black.withValues(alpha: 0.90),
+      color: Colors.black.withValues(alpha: 0.85),
       alignment: Alignment.center,
       child: Container(
-        width: 440,
-        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 28),
-        decoration: luxuryPanel(radius: 8, highlight: true),
+        width: 420,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: appBgMid,
+          borderRadius: BorderRadius.circular(appRadius),
+          border: Border.all(color: appLine, width: 0.8),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 52,
-              height: 52,
-              decoration: luxuryPanel(radius: 8, highlight: true),
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: appTile,
+                borderRadius: BorderRadius.circular(appRadius),
+                border: Border.all(color: appLine, width: 0.8),
+              ),
               child: const Icon(
                 Icons.pause_rounded,
-                size: 30,
-                color: kGold,
+                size: 24,
+                color: appText,
               ),
             ),
             const SizedBox(height: 14),
             Text(
-              'GAME PAUSED',
-              style: luxuryFont(
-                24,
-                weight: FontWeight.w300,
-                spacing: 2.0,
-                color: kGold,
+              'Game Paused',
+              style: appFont(
+                22,
+                weight: FontWeight.w700,
+                spacing: -0.5,
+                color: appText,
               ),
             ),
             const SizedBox(height: 6),
             Text(
               'Game timer and motion sensors are suspended.',
               textAlign: TextAlign.center,
-              style: luxuryFont(13, color: kTextDim),
+              style: appFont(13, color: appTextDim),
             ),
             const SizedBox(height: 20),
             Row(
@@ -636,25 +684,20 @@ class _GameplayScreenState extends State<GameplayScreen>
                   child: GestureDetector(
                     onTap: _quitToMenu,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: luxuryPanel(radius: 8),
+                      padding: const EdgeInsets.symmetric(vertical: 11),
+                      decoration: BoxDecoration(
+                        color: appTile,
+                        borderRadius: BorderRadius.circular(appRadius),
+                        border: Border.all(color: appLine, width: 0.8),
+                      ),
                       alignment: Alignment.center,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.arrow_back_rounded,
-                              color: kPassAmber, size: 16),
-                          const SizedBox(width: 6),
-                          Text(
-                            'QUIT TO MENU',
-                            style: luxuryFont(
-                              12,
-                              weight: FontWeight.w500,
-                              spacing: 1.0,
-                              color: kPassAmber,
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        'Quit to Menu',
+                        style: appFont(
+                          13,
+                          weight: FontWeight.w600,
+                          color: appTextDim,
+                        ),
                       ),
                     ),
                   ),
@@ -664,30 +707,19 @@ class _GameplayScreenState extends State<GameplayScreen>
                   child: GestureDetector(
                     onTap: _resumeFromPause,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: luxuryPanel(
-                        radius: 8,
-                        highlight: true,
-                        fillTop: const Color(0xFF241F14),
-                        fillBottom: const Color(0xFF14110A),
+                      padding: const EdgeInsets.symmetric(vertical: 11),
+                      decoration: BoxDecoration(
+                        color: appText,
+                        borderRadius: BorderRadius.circular(appRadius),
                       ),
                       alignment: Alignment.center,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.play_arrow_rounded,
-                              color: kGold, size: 18),
-                          const SizedBox(width: 6),
-                          Text(
-                            'RESUME',
-                            style: luxuryFont(
-                              13,
-                              weight: FontWeight.w500,
-                              spacing: 1.2,
-                              color: kGold,
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        'Resume',
+                        style: appFont(
+                          13,
+                          weight: FontWeight.w600,
+                          color: appBgBottom,
+                        ),
                       ),
                     ),
                   ),
@@ -701,16 +733,16 @@ class _GameplayScreenState extends State<GameplayScreen>
   }
 }
 
-// ── Luxury Left/Right Thumb Buttons ─────────────────────────────────────────
+// ── Left/Right Thumb Buttons ────────────────────────────────────────────────
 
-class _LuxuryThumbButton extends StatelessWidget {
+class _ThumbButton extends StatelessWidget {
   final String label;
   final String sublabel;
   final Color accentColor;
   final IconData icon;
   final VoidCallback onTap;
 
-  const _LuxuryThumbButton({
+  const _ThumbButton({
     required this.label,
     required this.sublabel,
     required this.accentColor,
@@ -721,39 +753,43 @@ class _LuxuryThumbButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 95,
+      width: 90,
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-          decoration: luxuryPanel(
-            radius: 8,
-            borderColor: accentColor.withValues(alpha: 0.65),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+          decoration: BoxDecoration(
+            color: appTile,
+            borderRadius: BorderRadius.circular(appRadius),
+            border: Border.all(
+              color: accentColor.withValues(alpha: 0.5),
+              width: 0.8,
+            ),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: 32,
+                height: 32,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(appRadius),
                   color: accentColor.withValues(alpha: 0.15),
                   border: Border.all(
-                    color: accentColor.withValues(alpha: 0.6),
-                    width: 1,
+                    color: accentColor.withValues(alpha: 0.5),
+                    width: 0.8,
                   ),
                 ),
-                child: Icon(icon, size: 20, color: accentColor),
+                child: Icon(icon, size: 18, color: accentColor),
               ),
               const SizedBox(height: 8),
               Text(
                 label,
                 textAlign: TextAlign.center,
-                style: luxuryFont(
-                  13,
-                  weight: FontWeight.w500,
-                  spacing: 1.0,
+                style: appFont(
+                  12,
+                  weight: FontWeight.w600,
+                  spacing: 0.5,
                   color: accentColor,
                 ),
               ),
@@ -761,10 +797,10 @@ class _LuxuryThumbButton extends StatelessWidget {
               Text(
                 sublabel,
                 textAlign: TextAlign.center,
-                style: luxuryFont(
+                style: appFont(
                   10,
                   weight: FontWeight.w400,
-                  color: kTextDim,
+                  color: appTextDim,
                 ),
               ),
             ],
