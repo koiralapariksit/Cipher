@@ -50,8 +50,12 @@ class _GameplayScreenState extends State<GameplayScreen>
   bool _isNavigatingToResults = false;
 
   // Real-time sensor debug telemetry notifier
-  final ValueNotifier<({double pitch, TiltZone zone})> _sensorDebugNotifier =
-      ValueNotifier((pitch: 0.0, zone: TiltZone.uncalibrated));
+  final ValueNotifier<({double angle, double relativeAngle, TiltState state})>
+      _sensorDebugNotifier = ValueNotifier((
+    angle: 0.0,
+    relativeAngle: 0.0,
+    state: TiltState.inactive,
+  ));
 
   @override
   void initState() {
@@ -79,6 +83,9 @@ class _GameplayScreenState extends State<GameplayScreen>
       if (_storage.settings.vibrationEnabled) {
         HapticFeedback.lightImpact();
       }
+      if (_storage.settings.soundEnabled) {
+        SystemSound.play(SystemSoundType.click);
+      }
     };
     _controller.onGameFinished = _onGameFinished;
 
@@ -94,19 +101,33 @@ class _GameplayScreenState extends State<GameplayScreen>
       onCorrect: () {
         if (_controller.phase == GamePhase.playing) {
           final word = _controller.currentWord;
+          final cardIdx = _controller.cardIndex;
+          final sessionId = _controller.roundSessionId;
           _triggerFeedback(isCorrect: true, word: word);
-          _controller.markCorrect();
+          _controller.markCorrect(
+            expectedCardIndex: cardIdx,
+            expectedSessionId: sessionId,
+          );
         }
       },
       onPass: () {
         if (_controller.phase == GamePhase.playing) {
           final word = _controller.currentWord;
+          final cardIdx = _controller.cardIndex;
+          final sessionId = _controller.roundSessionId;
           _triggerFeedback(isCorrect: false, word: word);
-          _controller.markPass();
+          _controller.markPass(
+            expectedCardIndex: cardIdx,
+            expectedSessionId: sessionId,
+          );
         }
       },
-      onTelemetry: (pitch, zone) {
-        _sensorDebugNotifier.value = (pitch: pitch, zone: zone);
+      onTelemetry: (angle, relativeAngle, state) {
+        _sensorDebugNotifier.value = (
+          angle: angle,
+          relativeAngle: relativeAngle,
+          state: state,
+        );
       },
     );
   }
@@ -117,6 +138,14 @@ class _GameplayScreenState extends State<GameplayScreen>
         HapticFeedback.heavyImpact();
       } else {
         HapticFeedback.mediumImpact();
+      }
+    }
+
+    if (_storage.settings.soundEnabled) {
+      if (isCorrect) {
+        SystemSound.play(SystemSoundType.click);
+      } else {
+        SystemSound.play(SystemSoundType.alert);
       }
     }
 
@@ -134,6 +163,12 @@ class _GameplayScreenState extends State<GameplayScreen>
         });
       }
     });
+  }
+
+  void _toggleSound() async {
+    final nextSound = !_storage.settings.soundEnabled;
+    await _storage.updateSettings(_storage.settings.copyWith(soundEnabled: nextSound));
+    if (mounted) setState(() {});
   }
 
   void _toggleInvertTilt() {
@@ -166,8 +201,8 @@ class _GameplayScreenState extends State<GameplayScreen>
     if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused ||
         state == AppLifecycleState.hidden) {
-      // Pause timers and stop accelerometer when leaving
-      _sensor.stopListening();
+      // Pause timers and sensor processing when leaving
+      _sensor.pause();
       _controller.pause();
     } else if (state == AppLifecycleState.resumed) {
       // Remain paused until user explicitly taps to resume
@@ -179,7 +214,7 @@ class _GameplayScreenState extends State<GameplayScreen>
 
   void _resumeFromPause() {
     _controller.resume();
-    _startSensor();
+    _sensor.resume();
   }
 
   void _quitToMenu() {
@@ -196,6 +231,9 @@ class _GameplayScreenState extends State<GameplayScreen>
 
     if (_storage.settings.vibrationEnabled) {
       HapticFeedback.vibrate();
+    }
+    if (_storage.settings.soundEnabled) {
+      SystemSound.play(SystemSoundType.alert);
     }
 
     // Persist round history
@@ -239,17 +277,29 @@ class _GameplayScreenState extends State<GameplayScreen>
 
   void _handleManualCorrect() {
     if (_controller.phase == GamePhase.playing) {
+      _sensor.lockManually();
       final word = _controller.currentWord;
+      final cardIdx = _controller.cardIndex;
+      final sessionId = _controller.roundSessionId;
       _triggerFeedback(isCorrect: true, word: word);
-      _controller.markCorrect();
+      _controller.markCorrect(
+        expectedCardIndex: cardIdx,
+        expectedSessionId: sessionId,
+      );
     }
   }
 
   void _handleManualPass() {
     if (_controller.phase == GamePhase.playing) {
+      _sensor.lockManually();
       final word = _controller.currentWord;
+      final cardIdx = _controller.cardIndex;
+      final sessionId = _controller.roundSessionId;
       _triggerFeedback(isCorrect: false, word: word);
-      _controller.markPass();
+      _controller.markPass(
+        expectedCardIndex: cardIdx,
+        expectedSessionId: sessionId,
+      );
     }
   }
 
@@ -304,21 +354,24 @@ class _GameplayScreenState extends State<GameplayScreen>
               bottom: 6,
               left: 0,
               right: 0,
-              child: ValueListenableBuilder<({double pitch, TiltZone zone})>(
+              child: ValueListenableBuilder<({double angle, double relativeAngle, TiltState state})>(
                 valueListenable: _sensorDebugNotifier,
                 builder: (context, data, _) {
-                  final isNeutral = data.zone == TiltZone.neutral;
-                  final isCorrect = data.zone == TiltZone.downCorrect;
-                  final isPass = data.zone == TiltZone.upPass;
-                  final isInvalid = data.zone == TiltZone.invalidOrientation;
+                  final isArmed = data.state == TiltState.armed;
+                  final isCorrect = data.state == TiltState.candidateCorrect;
+                  final isPass = data.state == TiltState.candidatePass;
+                  final isCalibrating = data.state == TiltState.calibrating;
+                  final isLocked = data.state == TiltState.locked;
 
                   final Color badgeColor = isCorrect
                       ? appCorrect
                       : (isPass
                           ? appPass
-                          : (isNeutral
+                          : (isArmed
                               ? appText
-                              : (isInvalid ? const Color(0xFFEF4444) : appTextDim)));
+                              : (isCalibrating || isLocked
+                                  ? appPass.withValues(alpha: 0.8)
+                                  : appTextDim)));
 
                   return Center(
                     child: IgnorePointer(
@@ -334,7 +387,7 @@ class _GameplayScreenState extends State<GameplayScreen>
                           ),
                         ),
                         child: Text(
-                          'Pitch: ${data.pitch.toStringAsFixed(0)}° • ${data.zone.name.toUpperCase()}',
+                          '${data.state.name.toUpperCase()} • ${data.relativeAngle.toStringAsFixed(0)}° (Raw ${data.angle.toStringAsFixed(0)}°)',
                           style: appFont(
                             11,
                             color: badgeColor,
@@ -484,6 +537,18 @@ class _GameplayScreenState extends State<GameplayScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   _buildScoreBadge(_controller.score),
+                  const SizedBox(width: 8),
+                  AppIconButton(
+                    icon: _storage.settings.soundEnabled
+                        ? Icons.volume_up_rounded
+                        : Icons.volume_off_rounded,
+                    tooltip: _storage.settings.soundEnabled
+                        ? 'Mute Sound Effects'
+                        : 'Enable Sound Effects',
+                    size: 36,
+                    iconColor: _storage.settings.soundEnabled ? appText : appTextDim,
+                    onTap: _toggleSound,
+                  ),
                   const SizedBox(width: 8),
                   AppIconButton(
                     icon: Icons.swap_vert_rounded,
