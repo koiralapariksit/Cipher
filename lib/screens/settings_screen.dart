@@ -64,7 +64,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const LuxurySectionHeader(title: 'Gameplay Defaults'),
                   const SizedBox(height: 10),
                   Container(
-                    decoration: luxuryPanel(radius: 18),
+                    decoration: luxuryPanel(radius: 8),
                     child: Column(
                       children: [
                         _buildDurationTile(),
@@ -79,7 +79,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             width: 38,
                             height: 38,
                             decoration: BoxDecoration(
-                              shape: BoxShape.circle,
+                              borderRadius: BorderRadius.circular(6),
                               color: kSelectedFill,
                               border: Border.all(
                                 color: kGold.withValues(alpha: 0.3),
@@ -113,7 +113,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const LuxurySectionHeader(title: 'Sound & Haptics'),
                   const SizedBox(height: 10),
                   Container(
-                    decoration: luxuryPanel(radius: 18),
+                    decoration: luxuryPanel(radius: 8),
                     child: Column(
                       children: [
                         SwitchListTile.adaptive(
@@ -123,7 +123,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             width: 38,
                             height: 38,
                             decoration: BoxDecoration(
-                              shape: BoxShape.circle,
+                              borderRadius: BorderRadius.circular(6),
                               color: kSelectedFill,
                               border: Border.all(
                                 color: kGold.withValues(alpha: 0.3),
@@ -159,7 +159,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             width: 38,
                             height: 38,
                             decoration: BoxDecoration(
-                              shape: BoxShape.circle,
+                              borderRadius: BorderRadius.circular(6),
                               color: kSelectedFill,
                               border: Border.all(
                                 color: kGold.withValues(alpha: 0.3),
@@ -193,7 +193,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const LuxurySectionHeader(title: 'Data & Reset'),
                   const SizedBox(height: 10),
                   Container(
-                    decoration: luxuryPanel(radius: 18),
+                    decoration: luxuryPanel(radius: 8),
                     child: Column(
                       children: [
                         ListTile(
@@ -203,7 +203,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             width: 38,
                             height: 38,
                             decoration: BoxDecoration(
-                              shape: BoxShape.circle,
+                              borderRadius: BorderRadius.circular(6),
                               color: kSelectedFill,
                               border: Border.all(
                                 color: kGold.withValues(alpha: 0.3),
@@ -233,7 +233,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 color: _storage.roundHistory.isEmpty
                                     ? Colors.transparent
                                     : kPassAmber.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(6),
                                 border: Border.all(
                                   color: _storage.roundHistory.isEmpty
                                       ? Colors.white12
@@ -266,7 +266,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             width: 38,
                             height: 38,
                             decoration: BoxDecoration(
-                              shape: BoxShape.circle,
+                              borderRadius: BorderRadius.circular(6),
                               color: kPassAmber.withValues(alpha: 0.15),
                               border: Border.all(
                                 color: kPassAmber.withValues(alpha: 0.4),
@@ -292,7 +292,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   horizontal: 14, vertical: 7),
                               decoration: BoxDecoration(
                                 color: kPassAmber.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(6),
                                 border: Border.all(
                                   color: kPassAmber,
                                   width: 0.8,
@@ -352,7 +352,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(6),
               color: kSelectedFill,
               border: Border.all(
                 color: kGold.withValues(alpha: 0.3),
@@ -379,7 +379,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           Container(
             padding: const EdgeInsets.all(3),
-            decoration: luxuryPanel(radius: 12),
+            decoration: luxuryPanel(radius: 8),
             child: Row(
               children: durations.map((d) {
                 final selected = d == _settings.defaultTimerDuration;
@@ -392,7 +392,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: selected ? kSelectedFill : Colors.transparent,
-                      borderRadius: BorderRadius.circular(9),
+                      borderRadius: BorderRadius.circular(6),
                       border: Border.all(
                         color: selected
                             ? kGold.withValues(alpha: 0.8)
@@ -424,7 +424,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: kPanelTop,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(8),
           side: BorderSide(color: kPassAmber.withValues(alpha: 0.5), width: 1),
         ),
         title: Text(
@@ -451,7 +451,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: kPassAmber.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: kPassAmber, width: 1),
               ),
               child: Text(
@@ -472,7 +472,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: kPanelTop,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(8),
           side: BorderSide(color: kPassAmber.withValues(alpha: 0.6), width: 1),
         ),
         title: Text(
@@ -503,7 +503,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       style: luxuryFont(14, color: kText)),
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(8),
                     side: BorderSide(
                         color: kGold.withValues(alpha: 0.4), width: 0.8),
                   ),
@@ -515,7 +515,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: kPassAmber.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: kPassAmber, width: 1),
               ),
               child: Text(

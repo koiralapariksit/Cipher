@@ -94,13 +94,15 @@ class _GameplayScreenState extends State<GameplayScreen>
     _sensor.startListening(
       onCorrect: () {
         if (_controller.phase == GamePhase.playing) {
-          _triggerFeedback(isCorrect: true);
+          final word = _controller.currentWord;
+          _triggerFeedback(isCorrect: true, word: word);
           _controller.markCorrect();
         }
       },
       onPass: () {
         if (_controller.phase == GamePhase.playing) {
-          _triggerFeedback(isCorrect: false);
+          final word = _controller.currentWord;
+          _triggerFeedback(isCorrect: false, word: word);
           _controller.markPass();
         }
       },
@@ -110,7 +112,7 @@ class _GameplayScreenState extends State<GameplayScreen>
     );
   }
 
-  void _triggerFeedback({required bool isCorrect}) {
+  void _triggerFeedback({required bool isCorrect, required String word}) {
     if (_storage.settings.vibrationEnabled) {
       if (isCorrect) {
         HapticFeedback.heavyImpact();
@@ -122,7 +124,7 @@ class _GameplayScreenState extends State<GameplayScreen>
     _flashTimer?.cancel();
     setState(() {
       _flashColor = isCorrect ? kCorrectGreen : kPassAmber;
-      _flashLabel = isCorrect ? 'CORRECT! +1' : 'PASS';
+      _flashLabel = isCorrect ? 'Correct: $word' : 'Pass: $word';
     });
 
     _flashTimer = Timer(const Duration(milliseconds: 450), () {
@@ -149,7 +151,7 @@ class _GameplayScreenState extends State<GameplayScreen>
         duration: const Duration(seconds: 1),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           side: BorderSide(color: kGold.withValues(alpha: 0.4), width: 0.8),
         ),
         backgroundColor: kPanelTop,
@@ -238,14 +240,16 @@ class _GameplayScreenState extends State<GameplayScreen>
 
   void _handleManualCorrect() {
     if (_controller.phase == GamePhase.playing) {
-      _triggerFeedback(isCorrect: true);
+      final word = _controller.currentWord;
+      _triggerFeedback(isCorrect: true, word: word);
       _controller.markCorrect();
     }
   }
 
   void _handleManualPass() {
     if (_controller.phase == GamePhase.playing) {
-      _triggerFeedback(isCorrect: false);
+      final word = _controller.currentWord;
+      _triggerFeedback(isCorrect: false, word: word);
       _controller.markPass();
     }
   }
@@ -268,13 +272,6 @@ class _GameplayScreenState extends State<GameplayScreen>
                 duration: const Duration(milliseconds: 150),
                 decoration: BoxDecoration(
                   color: _flashColor!.withValues(alpha: 0.90),
-                  boxShadow: [
-                    BoxShadow(
-                      color: _flashColor!.withValues(alpha: 0.4),
-                      blurRadius: 40,
-                      spreadRadius: 10,
-                    ),
-                  ],
                 ),
                 alignment: Alignment.center,
                 child: Text(
@@ -317,7 +314,7 @@ class _GameplayScreenState extends State<GameplayScreen>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 4),
                       decoration: luxuryPanel(
-                        radius: 12,
+                        radius: 6,
                         borderColor: badgeColor.withValues(alpha: 0.45),
                       ),
                       child: Text(
@@ -387,17 +384,10 @@ class _GameplayScreenState extends State<GameplayScreen>
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-            decoration: luxuryPanel(radius: 20, highlight: true),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(widget.deck.emoji, style: const TextStyle(fontSize: 22)),
-                const SizedBox(width: 8),
-                Text(
-                  widget.deck.name,
-                  style: luxuryFont(18, weight: FontWeight.w400, color: kText),
-                ),
-              ],
+            decoration: luxuryPanel(radius: 8, highlight: true),
+            child: Text(
+              widget.deck.name.toUpperCase(),
+              style: luxuryFont(15, weight: FontWeight.w500, spacing: 1.5, color: kGold),
             ),
           ),
           const SizedBox(height: 10),
@@ -414,7 +404,7 @@ class _GameplayScreenState extends State<GameplayScreen>
           const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            decoration: luxuryPanel(radius: 14),
+            decoration: luxuryPanel(radius: 8),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -454,18 +444,11 @@ class _GameplayScreenState extends State<GameplayScreen>
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                decoration: luxuryPanel(radius: 14),
-                child: Row(
-                  children: [
-                    Text(widget.deck.emoji,
-                        style: const TextStyle(fontSize: 16)),
-                    const SizedBox(width: 8),
-                    Text(
-                      widget.deck.name,
-                      style: luxuryFont(14,
-                          weight: FontWeight.w400, color: kText),
-                    ),
-                  ],
+                decoration: luxuryPanel(radius: 8),
+                child: Text(
+                  widget.deck.name,
+                  style: luxuryFont(14,
+                      weight: FontWeight.w500, color: kText),
                 ),
               ),
               Row(
@@ -518,7 +501,7 @@ class _GameplayScreenState extends State<GameplayScreen>
                         horizontal: 10, vertical: 4),
                     padding: const EdgeInsets.symmetric(
                         horizontal: 24, vertical: 12),
-                    decoration: luxuryPanel(radius: 26, highlight: true),
+                    decoration: luxuryPanel(radius: 8, highlight: true),
                     child: Center(
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
@@ -564,7 +547,7 @@ class _GameplayScreenState extends State<GameplayScreen>
       duration: const Duration(milliseconds: 300),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: luxuryPanel(
-        radius: 16,
+        radius: 8,
         borderColor: isUrgent ? kPassAmber : kGold.withValues(alpha: 0.8),
         fillTop: isUrgent ? const Color(0xFF2E150A) : null,
       ),
@@ -593,7 +576,7 @@ class _GameplayScreenState extends State<GameplayScreen>
   Widget _buildScoreBadge(int score) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      decoration: luxuryPanel(radius: 14),
+      decoration: luxuryPanel(radius: 8),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -616,17 +599,17 @@ class _GameplayScreenState extends State<GameplayScreen>
       child: Container(
         width: 440,
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 28),
-        decoration: luxuryPanel(radius: 24, highlight: true),
+        decoration: luxuryPanel(radius: 8, highlight: true),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 58,
-              height: 58,
-              decoration: luxuryPanel(radius: 29, highlight: true),
+              width: 52,
+              height: 52,
+              decoration: luxuryPanel(radius: 8, highlight: true),
               child: const Icon(
                 Icons.pause_rounded,
-                size: 34,
+                size: 30,
                 color: kGold,
               ),
             ),
@@ -654,7 +637,7 @@ class _GameplayScreenState extends State<GameplayScreen>
                     onTap: _quitToMenu,
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: luxuryPanel(radius: 14),
+                      decoration: luxuryPanel(radius: 8),
                       alignment: Alignment.center,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -683,7 +666,7 @@ class _GameplayScreenState extends State<GameplayScreen>
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: luxuryPanel(
-                        radius: 14,
+                        radius: 8,
                         highlight: true,
                         fillTop: const Color(0xFF241F14),
                         fillBottom: const Color(0xFF14110A),
@@ -744,17 +727,17 @@ class _LuxuryThumbButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
           decoration: luxuryPanel(
-            radius: 20,
+            radius: 8,
             borderColor: accentColor.withValues(alpha: 0.65),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 38,
-                height: 38,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(6),
                   color: accentColor.withValues(alpha: 0.15),
                   border: Border.all(
                     color: accentColor.withValues(alpha: 0.6),
