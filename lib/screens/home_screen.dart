@@ -21,19 +21,20 @@ const Color _selectedFill = Color(0xFF17140C);
 TextStyle _font(double size,
     {FontWeight weight = FontWeight.w400,
     Color color = _text,
-    double spacing = 0}) {
+    double spacing = 0,
+    double? height}) {
   return GoogleFonts.jost(
     fontSize: size,
     fontWeight: weight,
     color: color,
     letterSpacing: spacing,
+    height: height,
   );
 }
 
-/// Soft embossed panel: charcoal gradient, faint highlight top-left,
-/// deep shadow bottom-right, and a thin gold hairline.
+/// Minimalist luxury panel: charcoal surface, subtle border, sharp 8px radius
 BoxDecoration _panel({
-  double radius = 18,
+  double radius = 8,
   bool highlight = false,
   Color? borderColor,
 }) {
@@ -51,18 +52,6 @@ BoxDecoration _panel({
               : _gold.withValues(alpha: 0.22)),
       width: highlight ? 1.2 : 0.8,
     ),
-    boxShadow: [
-      BoxShadow(
-        color: Colors.white.withValues(alpha: 0.04),
-        offset: const Offset(-2, -2),
-        blurRadius: 6,
-      ),
-      BoxShadow(
-        color: Colors.black.withValues(alpha: 0.9),
-        offset: const Offset(3, 3),
-        blurRadius: 8,
-      ),
-    ],
   );
 }
 
@@ -205,7 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Container(
                   height: 46,
-                  decoration: _panel(radius: 16),
+                  decoration: _panel(radius: 8),
                   child: TextField(
                     controller: _searchController,
                     style: _font(15),
@@ -244,7 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(width: 12),
                     Container(
                       padding: const EdgeInsets.all(3),
-                      decoration: _panel(radius: 14),
+                      decoration: _panel(radius: 8),
                       child: Row(
                         children: _timerOptions.map((t) {
                           final selected = t == _selectedTimer;
@@ -257,7 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 color: selected
                                     ? _selectedFill
                                     : Colors.transparent,
-                                borderRadius: BorderRadius.circular(11),
+                                borderRadius: BorderRadius.circular(6),
                                 border: Border.all(
                                   color: selected
                                       ? _gold.withValues(alpha: 0.8)
@@ -302,7 +291,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: selected
                               ? _selectedFill
                               : const Color(0xFF101010),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(6),
                           border: Border.all(
                             color: selected
                                 ? _gold.withValues(alpha: 0.85)
@@ -392,7 +381,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               label:
                                   isAi ? 'Ask AI to make one' : 'Write your own',
                               icon: isAi
-                                  ? Icons.auto_awesome_outlined
+                                  ? Icons.psychology_outlined
                                   : Icons.add_rounded,
                               onTap: isAi ? _openAiGenerator : _openDeckEditor,
                             );
@@ -442,7 +431,7 @@ class _RoundIconButton extends StatelessWidget {
         child: Container(
           width: 44,
           height: 44,
-          decoration: _panel(radius: 22),
+          decoration: _panel(radius: 8),
           child: Icon(icon, color: _gold, size: 21),
         ),
       ),
@@ -470,123 +459,142 @@ class _DeckCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = Color(deck.colorValue);
+    final categoryLabel = deck.isCustom
+        ? 'CUSTOM'
+        : (deck.category.isNotEmpty ? deck.category.toUpperCase() : 'GENERAL');
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        decoration: _panel(radius: 20, highlight: isFavorite),
-        child: Stack(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        decoration: _panel(radius: 8, highlight: isFavorite),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Badges
-            Positioned(
-              top: 10,
-              left: 12,
-              child: Row(
-                children: [
-                  if (deck.isCustom)
-                    Container(
-                      margin: const EdgeInsets.only(right: 6),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 7, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: _gold.withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text('Custom',
-                          style: _font(10,
-                              weight: FontWeight.w500, color: _gold)),
+            // Top row: category/custom badge, high score, and action icons
+            Row(
+              children: [
+                // Category Tag
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                  decoration: BoxDecoration(
+                    color: _gold.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                      color: _gold.withValues(alpha: 0.35),
+                      width: 0.7,
                     ),
-                  if (highScore > 0)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 7, vertical: 2),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                            color: _gold.withValues(alpha: 0.6), width: 0.8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.emoji_events_outlined,
-                              size: 11, color: _gold),
-                          const SizedBox(width: 3),
-                          Text('$highScore',
-                              style: _font(10,
-                                  weight: FontWeight.w500, color: _gold)),
-                        ],
+                  ),
+                  child: Text(
+                    categoryLabel,
+                    style: _font(9,
+                        weight: FontWeight.w600, spacing: 1.1, color: _gold),
+                  ),
+                ),
+                if (highScore > 0) ...[
+                  const SizedBox(width: 5),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 5, vertical: 2.5),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: _gold.withValues(alpha: 0.35),
+                        width: 0.7,
                       ),
                     ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.emoji_events_outlined,
+                            size: 10, color: _gold),
+                        const SizedBox(width: 3),
+                        Text('$highScore',
+                            style: _font(9,
+                                weight: FontWeight.w600, color: _gold)),
+                      ],
+                    ),
+                  ),
                 ],
-              ),
-            ),
-
-            // Edit + favorite
-            Positioned(
-              top: 2,
-              right: 2,
-              child: Row(
-                children: [
-                  if (onEdit != null)
-                    IconButton(
-                      icon: const Icon(Icons.edit_outlined,
-                          size: 17, color: _textDim),
-                      onPressed: onEdit,
-                      tooltip: 'Edit deck',
+                const Spacer(),
+                if (onEdit != null)
+                  GestureDetector(
+                    onTap: onEdit,
+                    behavior: HitTestBehavior.opaque,
+                    child: const Padding(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                      child:
+                          Icon(Icons.edit_outlined, size: 15, color: _textDim),
                     ),
-                  IconButton(
-                    icon: Icon(
+                  ),
+                GestureDetector(
+                  onTap: onFavoriteToggle,
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 3, top: 2, bottom: 2),
+                    child: Icon(
                       isFavorite
                           ? Icons.star_rounded
                           : Icons.star_outline_rounded,
-                      size: 23,
-                      color: isFavorite ? _gold : _textDim,
+                      size: 20,
+                      color:
+                          isFavorite ? _gold : _textDim.withValues(alpha: 0.6),
                     ),
-                    onPressed: onFavoriteToggle,
-                    tooltip: isFavorite
-                        ? 'Remove from favorites'
-                        : 'Add to favorites',
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
 
-            // Center content
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 22, 10, 8),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 52,
-                      height: 52,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.black,
-                        border: Border.all(
-                            color: color.withValues(alpha: 0.75), width: 1.2),
-                      ),
-                      child: Text(deck.emoji,
-                          style: const TextStyle(fontSize: 26)),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      deck.name,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: _font(16, weight: FontWeight.w500),
-                    ),
-                    const SizedBox(height: 1),
-                    Text(
-                      '${deck.items.length} cards',
-                      style: _font(12, color: _textDim),
-                    ),
-                  ],
+            const Spacer(),
+
+            // Deck Name with minimalist accent bar
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 2.5,
+                  height: 20,
+                  margin: const EdgeInsets.only(top: 2, right: 8),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(1.5),
+                  ),
                 ),
-              ),
+                Expanded(
+                  child: Text(
+                    deck.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: _font(
+                      16,
+                      weight: FontWeight.w500,
+                      color: _text,
+                      height: 1.2,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 8),
+
+            // Bottom info row: clean card count + subtle direction arrow
+            Row(
+              children: [
+                Text(
+                  '${deck.items.length} CARDS',
+                  style: _font(10,
+                      weight: FontWeight.w500, spacing: 1.2, color: _textDim),
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 13,
+                  color: _gold.withValues(alpha: 0.55),
+                ),
+              ],
             ),
           ],
         ),
@@ -645,7 +653,7 @@ class _DashedBorderPainter extends CustomPainter {
     final path = Path()
       ..addRRect(RRect.fromRectAndRadius(
         Offset.zero & size,
-        const Radius.circular(20),
+        const Radius.circular(8),
       ));
 
     const dash = 7.0;

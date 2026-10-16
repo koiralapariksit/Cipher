@@ -32,7 +32,7 @@ TextStyle luxuryFont(
 /// Soft embossed panel: charcoal gradient, faint highlight top-left,
 /// deep shadow bottom-right, and a thin gold hairline.
 BoxDecoration luxuryPanel({
-  double radius = 18,
+  double radius = 8,
   bool highlight = false,
   Color? borderColor,
   Color? fillTop,
@@ -55,22 +55,10 @@ BoxDecoration luxuryPanel({
               : kGold.withValues(alpha: 0.22)),
       width: highlight ? 1.2 : 0.8,
     ),
-    boxShadow: [
-      BoxShadow(
-        color: Colors.white.withValues(alpha: 0.04),
-        offset: const Offset(-2, -2),
-        blurRadius: 6,
-      ),
-      BoxShadow(
-        color: Colors.black.withValues(alpha: 0.9),
-        offset: const Offset(3, 3),
-        blurRadius: 8,
-      ),
-    ],
   );
 }
 
-/// 44x44 circular button matching home_screen.dart
+/// 44x44 sharp luxury icon button matching minimalist aesthetic
 class LuxuryRoundButton extends StatelessWidget {
   final IconData icon;
   final String tooltip;
@@ -96,7 +84,7 @@ class LuxuryRoundButton extends StatelessWidget {
         child: Container(
           width: size,
           height: size,
-          decoration: luxuryPanel(radius: size / 2),
+          decoration: luxuryPanel(radius: 8),
           child: Icon(icon, color: iconColor ?? kGold, size: size * 0.48),
         ),
       ),

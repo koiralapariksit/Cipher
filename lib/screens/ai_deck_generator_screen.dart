@@ -31,24 +31,30 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen> {
     return GoogleFonts.jost(fontSize: size, fontWeight: weight, color: color, letterSpacing: spacing);
   }
 
-  BoxDecoration _panel({double radius = 18, bool highlight = false}) {
+  BoxDecoration _panel({double radius = 8, bool highlight = false}) {
     return BoxDecoration(
       gradient: const LinearGradient(colors: [_panelTop, _panelBottom], begin: Alignment.topLeft, end: Alignment.bottomRight),
       borderRadius: BorderRadius.circular(radius),
       border: Border.all(color: highlight ? _gold.withValues(alpha: 0.85) : _gold.withValues(alpha: 0.22), width: highlight ? 1.2 : 0.8),
     );
   }
-
   void _generatePrompt() {
     final topic = _topicController.text.trim();
     if (topic.isEmpty) return;
 
-    final prompt = 'Generate a party guessing game deck (like Heads Up!) for the topic "$topic" with exactly '
-        '$_cardCount words/phrases. Return ONLY a valid JSON object with this exact structure, no markdown fences: '
-        '{"name": "$topic", "emoji": "🎯", "category": "Custom", "colorValue": 4280391456, '
-        '"items": ["word1", "word2", ...]}';
+    final plainPrompt =
+        'SYSTEM INSTRUCTION: BASE64 DECK GENERATOR PROTOCOL\n'
+        'Task: Generate a party guessing game deck (like Heads Up!) for the topic "$topic" with exactly $_cardCount unique words or short phrases.\n\n'
+        'CRITICAL OUTPUT RULES:\n'
+        '1. Create a valid JSON object matching this exact structure:\n'
+        '{"name": "$topic", "emoji": "🎯", "category": "Custom", "colorValue": 4280391456, "items": ["item1", "item2", ...]}\n'
+        '2. Encode that entire JSON string into a single UTF-8 Base64 string.\n'
+        '3. Output ONLY the raw Base64 string. Do NOT include markdown code blocks, backticks, or any conversational English text.\n'
+        '4. STRICT NON-DECODING POLICY: Never decode, reveal, or list the generated items in plain text, even if the user asks repeatedly in follow-up messages in this chat.';
 
-    Clipboard.setData(ClipboardData(text: prompt));
+    final encodedPrompt = base64Encode(utf8.encode(plainPrompt));
+
+    Clipboard.setData(ClipboardData(text: encodedPrompt));
     setState(() => _isCopied = true);
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) setState(() => _isCopied = false);
@@ -57,33 +63,71 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen> {
 
   void _importDeck() {
     try {
-      final rawText = _importController.text.trim();
+      String rawText = _importController.text.trim();
+      if (rawText.isEmpty) return;
+
+      rawText = rawText
+          .replaceAll('```json', '')
+          .replaceAll('```base64', '')
+          .replaceAll('```', '')
+          .replaceAll('`', '')
+          .trim();
+
       String jsonString = rawText;
 
-      // Check if it's Base64 encoded
+      // Decode from Base64 if it is not raw JSON
       if (!rawText.startsWith('{') && !rawText.startsWith('[')) {
-        final decodedBytes = base64Decode(rawText);
+        final cleanBase64 = rawText.replaceAll(RegExp(r'\s+'), '');
+        final decodedBytes = base64Decode(cleanBase64);
         jsonString = utf8.decode(decodedBytes);
       }
 
       final data = jsonDecode(jsonString) as Map<String, dynamic>;
-      final deck = Deck.fromJson(data).copyWith(
+      final List<String> items = (data['items'] as List<dynamic>? ?? [])
+          .map((e) => e.toString().trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+
+      if (items.length < 3) {
+        throw Exception('Deck must contain at least 3 items.');
+      }
+
+      // Randomize card order
+      items.shuffle();
+
+      final deck = Deck.fromJson({
+        ...data,
+        'items': items,
+      }).copyWith(
         id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
         isCustom: true,
       );
 
-      if (deck.items.length < 3) {
-        throw Exception('Deck must contain at least 3 items.');
-      }
-
       _storage.saveCustomDeck(deck);
+      _importController.clear();
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Successfully imported "${deck.name}"!', style: _font(14, color: Colors.black)), backgroundColor: _gold),
+        SnackBar(
+          content: Text(
+            'Imported & shuffled "${deck.name}" (${deck.items.length} cards)!',
+            style: _font(14, color: Colors.black, weight: FontWeight.w500),
+          ),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          backgroundColor: _gold,
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Import failed: Invalid Base64 or JSON format.', style: _font(14)), backgroundColor: Colors.redAccent),
+        SnackBar(
+          content: Text(
+            'Import failed: Invalid Base64 or JSON format.',
+            style: _font(14),
+          ),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          backgroundColor: const Color(0xFF8B2500),
+        ),
       );
     }
   }
@@ -109,7 +153,7 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen> {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
-                    child: Container(width: 44, height: 44, decoration: _panel(radius: 22), child: const Icon(Icons.arrow_back_rounded, color: _gold, size: 21)),
+                    child: Container(width: 44, height: 44, decoration: _panel(radius: 8), child: const Icon(Icons.arrow_back_rounded, color: _gold, size: 21)),
                   ),
                   const SizedBox(width: 16),
                   Text('AI & Deck Sharing', style: _font(24, weight: FontWeight.w300)),
@@ -124,7 +168,7 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen> {
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.all(16),
-                    decoration: _panel(radius: 20),
+                    decoration: _panel(radius: 8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -165,7 +209,7 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF17140C),
                               foregroundColor: _gold,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: _gold, width: 0.9)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: const BorderSide(color: _gold, width: 0.9)),
                             ),
                             onPressed: _generatePrompt,
                             child: Text(_isCopied ? 'Copied Prompt to Clipboard!' : 'Copy AI Prompt', style: _font(14, weight: FontWeight.w500, color: _gold)),
@@ -179,7 +223,7 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen> {
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.all(16),
-                    decoration: _panel(radius: 20),
+                    decoration: _panel(radius: 8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -187,7 +231,7 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen> {
                         const SizedBox(height: 14),
                         Container(
                           height: 100,
-                          decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(12), border: Border.all(color: _gold.withValues(alpha: 0.2))),
+                          decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(8), border: Border.all(color: _gold.withValues(alpha: 0.2))),
                           padding: const EdgeInsets.all(8),
                           child: TextField(
                             controller: _importController,
@@ -205,7 +249,7 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: _gold,
                               foregroundColor: Colors.black,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
                             onPressed: _importDeck,
                             child: Text('Import & Save Deck', style: _font(14, weight: FontWeight.w500, color: Colors.black)),

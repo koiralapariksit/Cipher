@@ -27,22 +27,38 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
 
   final StorageService _storage = StorageService();
 
-  static const List<String> _emojiOptions = [
-    '🎯', '🔥', '🚀', '🧠', '👑', '🎉',
-    '🐱', '🍕', '🎮', '💡', '🎸', '⚽',
-    '👻', '💎', '🌈', '⚡', '🏆', '🍿',
-    '🎭', '🤖', '🏖️', '🍔', '🦄', '🎧',
+  static const List<({IconData icon, String key})> _deckIconOptions = [
+    (icon: Icons.style_outlined, key: '🎯'),
+    (icon: Icons.local_fire_department_outlined, key: '🔥'),
+    (icon: Icons.lightbulb_outlined, key: '💡'),
+    (icon: Icons.psychology_outlined, key: '🧠'),
+    (icon: Icons.celebration_outlined, key: '🎉'),
+    (icon: Icons.sports_esports_outlined, key: '🎮'),
+    (icon: Icons.music_note_outlined, key: '🎸'),
+    (icon: Icons.sports_soccer_outlined, key: '⚽'),
+    (icon: Icons.movie_outlined, key: '🍿'),
+    (icon: Icons.theater_comedy_outlined, key: '🎭'),
+    (icon: Icons.smart_toy_outlined, key: '🤖'),
+    (icon: Icons.palette_outlined, key: '🎨'),
+    (icon: Icons.flight_takeoff_rounded, key: '🚀'),
+    (icon: Icons.pets_outlined, key: '🐱'),
+    (icon: Icons.restaurant_outlined, key: '🍕'),
+    (icon: Icons.diamond_outlined, key: '💎'),
+    (icon: Icons.flash_on_outlined, key: '⚡'),
+    (icon: Icons.military_tech_outlined, key: '🏆'),
+    (icon: Icons.beach_access_outlined, key: '🏖️'),
+    (icon: Icons.headphones_outlined, key: '🎧'),
   ];
 
   static const List<int> _colorOptions = [
     0xFFC8A45C, // Metallic Gold
-    0xFF38BDF8, // Electric Blue
-    0xFFF43F5E, // Coral Rose
+    0xFFB38F4D, // Warm Bronze
+    0xFFD47A45, // Cognac Amber
     0xFF4E9F6E, // Luxury Emerald
-    0xFFD47A45, // Terracotta Amber
-    0xFF8B5CF6, // Royal Violet
-    0xFFEC4899, // Hot Magenta
-    0xFF06B6D4, // Cyan
+    0xFF7A8691, // Muted Slate Stone
+    0xFFA65B32, // Deep Terracotta
+    0xFF6B8267, // Muted Olive
+    0xFF94979A, // Charcoal Silver
   ];
 
   static const List<String> _categoryOptions = [
@@ -67,7 +83,7 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
       _words = List.from(widget.deck!.items);
     } else {
       _nameController.text = '';
-      _selectedEmoji = _emojiOptions.first;
+      _selectedEmoji = _deckIconOptions.first.key;
       _selectedColor = _colorOptions.first;
       _selectedCategory = _categoryOptions.first;
       _words = [];
@@ -126,7 +142,7 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: kPanelTop,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(8),
           side: BorderSide(color: kGold.withValues(alpha: 0.5), width: 1),
         ),
         title: Text(
@@ -134,7 +150,7 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
           style: luxuryFont(18, weight: FontWeight.w500, color: kGold),
         ),
         content: Container(
-          decoration: luxuryPanel(radius: 12),
+          decoration: luxuryPanel(radius: 8),
           child: TextField(
             controller: controller,
             autofocus: true,
@@ -165,7 +181,7 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
             },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: luxuryPanel(radius: 10, highlight: true),
+              decoration: luxuryPanel(radius: 8, highlight: true),
               child: Text(
                 'SAVE',
                 style: luxuryFont(13,
@@ -184,7 +200,7 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: kPanelTop,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(8),
           side: BorderSide(color: kPassAmber.withValues(alpha: 0.6), width: 1),
         ),
         title: Text(
@@ -212,7 +228,7 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: kPassAmber.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: kPassAmber, width: 1),
               ),
               child: Text(
@@ -260,7 +276,7 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
         ),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(8),
         ),
         backgroundColor: kGold,
       ),
@@ -298,7 +314,7 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
         content: Text(msg, style: luxuryFont(14, color: kText)),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(8),
           side: BorderSide(color: kGold.withValues(alpha: 0.4), width: 0.8),
         ),
         backgroundColor: kPanelTop,
@@ -353,7 +369,7 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
                       height: 44,
                       padding: const EdgeInsets.symmetric(horizontal: 18),
                       decoration: luxuryPanel(
-                        radius: 22,
+                        radius: 8,
                         highlight: true,
                         fillTop: const Color(0xFF241F14),
                         fillBottom: const Color(0xFF14110A),
@@ -398,14 +414,14 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 12),
-                        decoration: luxuryPanel(radius: 16),
+                        decoration: luxuryPanel(radius: 8),
                         child: Row(
                           children: [
                             Container(
                               width: 36,
                               height: 36,
                               decoration: BoxDecoration(
-                                shape: BoxShape.circle,
+                                borderRadius: BorderRadius.circular(6),
                                 color: kSelectedFill,
                                 border: Border.all(
                                   color: kGold.withValues(alpha: 0.4),
@@ -442,19 +458,19 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
                     const SizedBox(height: 18),
 
                     // Deck Name Input
-                    LuxurySectionHeader(title: 'Deck Title'),
+                    const LuxurySectionHeader(title: 'Deck Title'),
                     const SizedBox(height: 10),
                     Container(
                       height: 48,
-                      decoration: luxuryPanel(radius: 14),
+                      decoration: luxuryPanel(radius: 8),
                       child: TextFormField(
                         controller: _nameController,
                         style: luxuryFont(15, color: kText),
                         cursorColor: kGold,
                         decoration: InputDecoration(
-                          hintText: 'e.g. 90s Nostalgia, Harry Potter...',
+                          hintText: 'e.g. 90s Nostalgia, World History...',
                           hintStyle: luxuryFont(14, color: kTextDim),
-                          prefixIcon: const Icon(Icons.stars_rounded,
+                          prefixIcon: const Icon(Icons.edit_note_rounded,
                               color: kGold, size: 20),
                           border: InputBorder.none,
                           contentPadding:
@@ -473,7 +489,7 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
                     const SizedBox(height: 20),
                     _buildCategorySelector(),
                     const SizedBox(height: 20),
-                    _buildEmojiPicker(),
+                    _buildDeckIconPicker(),
                     const SizedBox(height: 20),
                     _buildColorPicker(),
                     const SizedBox(height: 24),
@@ -497,7 +513,7 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
                                 color: _words.length >= 5
                                     ? kCorrectGreen.withValues(alpha: 0.15)
                                     : kPassAmber.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(4),
                                 border: Border.all(
                                   color: _words.length >= 5
                                       ? kCorrectGreen.withValues(alpha: 0.5)
@@ -543,7 +559,7 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
                     if (_words.isEmpty)
                       Container(
                         padding: const EdgeInsets.symmetric(vertical: 36),
-                        decoration: luxuryPanel(radius: 18),
+                        decoration: luxuryPanel(radius: 8),
                         child: Center(
                           child: Column(
                             children: [
@@ -563,9 +579,9 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
                       )
                     else
                       Container(
-                        decoration: luxuryPanel(radius: 18),
+                        decoration: luxuryPanel(radius: 8),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.circular(8),
                           child: ListView.separated(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
@@ -584,7 +600,7 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
                                   width: 26,
                                   height: 26,
                                   decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
+                                    borderRadius: BorderRadius.circular(4),
                                     color: kSelectedFill,
                                     border: Border.all(
                                       color: kGold.withValues(alpha: 0.4),
@@ -649,20 +665,13 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
                     width: 0.8,
                   ),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.9),
-                    blurRadius: 16,
-                    offset: const Offset(0, -4),
-                  ),
-                ],
               ),
               child: Row(
                 children: [
                   Expanded(
                     child: Container(
                       height: 46,
-                      decoration: luxuryPanel(radius: 14),
+                      decoration: luxuryPanel(radius: 8),
                       child: TextField(
                         controller: _wordInputController,
                         style: luxuryFont(14, color: kText),
@@ -687,7 +696,7 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
                       height: 46,
                       padding: const EdgeInsets.symmetric(horizontal: 18),
                       decoration: luxuryPanel(
-                        radius: 14,
+                        radius: 8,
                         highlight: true,
                         fillTop: const Color(0xFF241F14),
                         fillBottom: const Color(0xFF14110A),
@@ -723,24 +732,33 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
         ? 'Your Deck Title'
         : _nameController.text;
 
+    final selectedIcon = _deckIconOptions
+        .firstWhere((e) => e.key == _selectedEmoji,
+            orElse: () => (icon: Icons.style_outlined, key: '🎯'))
+        .icon;
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
-      decoration: luxuryPanel(radius: 20, highlight: true),
+      decoration: luxuryPanel(radius: 8, highlight: true),
       child: Row(
         children: [
           Container(
-            width: 58,
-            height: 58,
+            width: 52,
+            height: 52,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(6),
               color: kSelectedFill,
               border: Border.all(
                 color: Color(_selectedColor).withValues(alpha: 0.8),
                 width: 1.2,
               ),
             ),
-            child: Text(_selectedEmoji, style: const TextStyle(fontSize: 28)),
+            child: Icon(
+              selectedIcon,
+              size: 24,
+              color: Color(_selectedColor),
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -772,7 +790,7 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        LuxurySectionHeader(title: 'Category / Genre'),
+        const LuxurySectionHeader(title: 'Category / Genre'),
         const SizedBox(height: 10),
         Wrap(
           spacing: 8,
@@ -786,7 +804,7 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                 decoration: BoxDecoration(
                   color: isSelected ? kSelectedFill : const Color(0xFF101010),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(6),
                   border: Border.all(
                     color: isSelected
                         ? kGold.withValues(alpha: 0.85)
@@ -810,30 +828,30 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
     );
   }
 
-  Widget _buildEmojiPicker() {
+  Widget _buildDeckIconPicker() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        LuxurySectionHeader(title: 'Deck Icon'),
+        const LuxurySectionHeader(title: 'Deck Icon Badge'),
         const SizedBox(height: 10),
         SizedBox(
-          height: 48,
+          height: 44,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            itemCount: _emojiOptions.length,
+            itemCount: _deckIconOptions.length,
             separatorBuilder: (_, _) => const SizedBox(width: 8),
             itemBuilder: (ctx, idx) {
-              final emoji = _emojiOptions[idx];
-              final isSelected = emoji == _selectedEmoji;
+              final opt = _deckIconOptions[idx];
+              final isSelected = opt.key == _selectedEmoji;
               return GestureDetector(
-                onTap: () => setState(() => _selectedEmoji = emoji),
+                onTap: () => setState(() => _selectedEmoji = opt.key),
                 child: Container(
-                  width: 48,
+                  width: 44,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color:
                         isSelected ? kSelectedFill : const Color(0xFF101010),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(6),
                     border: Border.all(
                       color: isSelected
                           ? kGold.withValues(alpha: 0.9)
@@ -841,7 +859,11 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
                       width: isSelected ? 1.2 : 0.8,
                     ),
                   ),
-                  child: Text(emoji, style: const TextStyle(fontSize: 22)),
+                  child: Icon(
+                    opt.icon,
+                    size: 20,
+                    color: isSelected ? kGold : kTextDim,
+                  ),
                 ),
               );
             },
@@ -855,7 +877,7 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        LuxurySectionHeader(title: 'Color Accent'),
+        const LuxurySectionHeader(title: 'Color Accent'),
         const SizedBox(height: 10),
         SizedBox(
           height: 42,
@@ -869,28 +891,19 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
               return GestureDetector(
                 onTap: () => setState(() => _selectedColor = colorVal),
                 child: Container(
-                  width: 42,
-                  height: 42,
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
                     color: Color(colorVal),
-                    shape: BoxShape.circle,
+                    borderRadius: BorderRadius.circular(6),
                     border: Border.all(
-                      color: isSelected ? kGold : Colors.black45,
-                      width: isSelected ? 2.5 : 1.0,
+                      color: isSelected ? kGold : Colors.white24,
+                      width: isSelected ? 2.0 : 0.8,
                     ),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: Color(colorVal).withValues(alpha: 0.5),
-                              blurRadius: 8,
-                              spreadRadius: 1,
-                            )
-                          ]
-                        : null,
                   ),
                   child: isSelected
                       ? const Icon(Icons.check_rounded,
-                          size: 20, color: Colors.white)
+                          size: 18, color: Colors.white)
                       : null,
                 ),
               );

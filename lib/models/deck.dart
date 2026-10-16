@@ -95,7 +95,7 @@ class Deck {
     id: 'starter_animals',
     name: 'Animals',
     emoji: '🦁',
-    colorValue: 0xFF10B981, // Neon Mint
+    colorValue: 0xFF4E9F6E, // Luxury Emerald
     category: 'Nature',
     items: [
       'Lion', 'Elephant', 'Kangaroo', 'Penguin', 'Giraffe',
@@ -112,7 +112,7 @@ class Deck {
     id: 'starter_food',
     name: 'Food & Drinks',
     emoji: '🍕',
-    colorValue: 0xFFF59E0B, // Sunny Amber
+    colorValue: 0xFFD47A45, // Cognac Amber
     category: 'Lifestyle',
     items: [
       'Pizza', 'Sushi', 'Cheeseburger', 'Ice Cream', 'Tacos',
@@ -129,7 +129,7 @@ class Deck {
     id: 'starter_movies',
     name: 'Movies & TV',
     emoji: '🍿',
-    colorValue: 0xFFEC4899, // Hot Magenta
+    colorValue: 0xFFB38F4D, // Warm Bronze
     category: 'Entertainment',
     items: [
       'Titanic', 'Jurassic Park', 'Star Wars', 'The Avengers', 'Harry Potter',
@@ -146,7 +146,7 @@ class Deck {
     id: 'starter_sports',
     name: 'Sports',
     emoji: '⚽',
-    colorValue: 0xFF38BDF8, // Electric Blue
+    colorValue: 0xFF7A8691, // Muted Slate Stone
     category: 'Sports',
     items: [
       'Soccer', 'Basketball', 'Baseball', 'Tennis', 'American Football',
@@ -163,7 +163,7 @@ class Deck {
     id: 'starter_objects',
     name: 'Objects',
     emoji: '💡',
-    colorValue: 0xFF8B5CF6, // Royal Violet
+    colorValue: 0xFFC8A45C, // Metallic Gold
     category: 'Everyday',
     items: [
       'Toothbrush', 'Umbrella', 'Coffee Mug', 'Headphones', 'Sunglasses',
@@ -180,7 +180,7 @@ class Deck {
     id: 'starter_actions',
     name: 'Actions',
     emoji: '🎭',
-    colorValue: 0xFFF43F5E, // Coral Rose
+    colorValue: 0xFFA65B32, // Deep Terracotta
     category: 'Activity',
     items: [
       'Dancing', 'Singing', 'Cooking', 'Juggling', 'Sleeping',

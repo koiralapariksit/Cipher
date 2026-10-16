@@ -107,19 +107,11 @@ class _ResultsScreenState extends State<ResultsScreen> {
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: luxuryPanel(radius: 14),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(_resolvedDeck.emoji,
-                            style: const TextStyle(fontSize: 16)),
-                        const SizedBox(width: 6),
-                        Text(
-                          round.deckName,
-                          style: luxuryFont(13,
-                              weight: FontWeight.w400, color: kGold),
-                        ),
-                      ],
+                    decoration: luxuryPanel(radius: 8),
+                    child: Text(
+                      round.deckName,
+                      style: luxuryFont(13,
+                          weight: FontWeight.w500, color: kGold),
                     ),
                   ),
                 ],
@@ -132,7 +124,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                 width: double.infinity,
                 padding:
                     const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
-                decoration: luxuryPanel(radius: 20, highlight: true),
+                decoration: luxuryPanel(radius: 8, highlight: true),
                 child: Column(
                   children: [
                     if (_isNewHighScore) ...[
@@ -141,7 +133,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                             horizontal: 12, vertical: 4),
                         decoration: BoxDecoration(
                           color: kSelectedFill,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(6),
                           border: Border.all(
                             color: kGold.withValues(alpha: 0.8),
                             width: 0.8,
@@ -226,14 +218,14 @@ class _ResultsScreenState extends State<ResultsScreen> {
                   ),
                   const SizedBox(width: 8),
                   _ResultFilterChip(
-                    label: '✓ Correct (${round.correctCount})',
+                    label: 'Correct (${round.correctCount})',
                     isSelected: _selectedFilterIndex == 1,
                     accentColor: kCorrectGreen,
                     onTap: () => setState(() => _selectedFilterIndex = 1),
                   ),
                   const SizedBox(width: 8),
                   _ResultFilterChip(
-                    label: '✗ Passed (${round.passedCount})',
+                    label: 'Passed (${round.passedCount})',
                     isSelected: _selectedFilterIndex == 2,
                     accentColor: kPassAmber,
                     onTap: () => setState(() => _selectedFilterIndex = 2),
@@ -254,7 +246,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
               // ── Scrollable Words List ──
               Expanded(
                 child: Container(
-                  decoration: luxuryPanel(radius: 18),
+                  decoration: luxuryPanel(radius: 8),
                   child: filteredAttempts.isEmpty
                       ? Center(
                           child: Text(
@@ -267,7 +259,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                           ),
                         )
                       : ClipRRect(
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.circular(8),
                           child: ListView.separated(
                             padding: const EdgeInsets.symmetric(vertical: 6),
                             itemCount: filteredAttempts.length,
@@ -290,7 +282,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                                   width: 28,
                                   height: 28,
                                   decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
+                                    borderRadius: BorderRadius.circular(6),
                                     color: color.withValues(alpha: 0.12),
                                     border: Border.all(
                                       color: color.withValues(alpha: 0.45),
@@ -317,10 +309,10 @@ class _ResultsScreenState extends State<ResultsScreen> {
                                     color: isCorrect
                                         ? color.withValues(alpha: 0.12)
                                         : Colors.white.withValues(alpha: 0.04),
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(4),
                                     border: Border.all(
                                       color: isCorrect
-                                          ? color.withValues(alpha: 0.4)
+                                            ? color.withValues(alpha: 0.4)
                                           : Colors.white10,
                                       width: 0.8,
                                     ),
@@ -352,7 +344,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                       onTap: _goHome,
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        decoration: luxuryPanel(radius: 16),
+                        decoration: luxuryPanel(radius: 8),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -381,7 +373,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         decoration: luxuryPanel(
-                          radius: 16,
+                          radius: 8,
                           highlight: true,
                           fillTop: const Color(0xFF241F14),
                           fillBottom: const Color(0xFF14110A),
@@ -488,7 +480,7 @@ class _ResultFilterChip extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: isSelected ? kSelectedFill : const Color(0xFF101010),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(6),
             border: Border.all(
               color: isSelected
                   ? activeColor.withValues(alpha: 0.85)
