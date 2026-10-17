@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'package:flutter/foundation.dart';
 
 /// Explicit actions emitted by the tilt controller.
 enum TiltAction { correct, pass }
