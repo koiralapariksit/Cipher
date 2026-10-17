@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heads_guess/services/argon_sensor_engine.dart';
+import 'package:heads_guess/services/storage_service.dart';
 
 void main() {
   group('ArgonSensorEngine Deterministic Dart Verification', () {
@@ -100,6 +101,40 @@ void main() {
       expect(actions.first, TiltAction.correct);
     });
 
+    test('Default setting (invertTilt = false): Tilt DOWN = correct, Tilt UP = pass', () {
+      expect(engine.invertZAxis, isFalse);
+      calibrateNeutral();
+
+      // Tilt DOWN (z > 0) -> correct
+      feedMultiple(5.63, 0.0, 8.04, 12);
+      expect(actions.last, TiltAction.correct);
+
+      // Return to neutral
+      feedMultiple(9.81, 0.0, 0.0, 8);
+      expect(engine.state, TiltState.neutralReady);
+
+      // Tilt UP (z < 0) -> pass
+      feedMultiple(5.63, 0.0, -8.04, 12);
+      expect(actions.last, TiltAction.pass);
+    });
+
+    test('Inverted setting (invertTilt = true): Tilt UP = correct, Tilt DOWN = pass', () {
+      engine.invertZAxis = true;
+      calibrateNeutral();
+
+      // Tilt UP (z < 0) -> correct when inverted
+      feedMultiple(5.63, 0.0, -8.04, 12);
+      expect(actions.last, TiltAction.correct);
+
+      // Return to neutral
+      feedMultiple(9.81, 0.0, 0.0, 8);
+      expect(engine.state, TiltState.neutralReady);
+
+      // Tilt DOWN (z > 0) -> pass when inverted
+      feedMultiple(5.63, 0.0, 8.04, 12);
+      expect(actions.last, TiltAction.pass);
+    });
+
     test('Engine requires neutral re-acquisition after a trigger', () {
       calibrateNeutral();
 
@@ -115,6 +150,25 @@ void main() {
       // Return to neutral (0 deg) for 80ms (4 samples = 80ms)
       feedMultiple(9.81, 0.0, 0.0, 8);
       expect(engine.state, TiltState.neutralReady);
+    });
+  });
+
+  group('AppSettings invertTilt Storage Verification', () {
+    test('Default fallback is invertTilt = false', () {
+      const settings = AppSettings();
+      expect(settings.invertTilt, isFalse);
+    });
+
+    test('Serializes and deserializes invertTilt correctly', () {
+      const original = AppSettings(invertTilt: true);
+      final jsonStr = original.toJson();
+      final parsed = AppSettings.fromJson(jsonStr);
+
+      expect(parsed.invertTilt, isTrue);
+
+      final mapWithoutField = <String, dynamic>{};
+      final fallback = AppSettings.fromMap(mapWithoutField);
+      expect(fallback.invertTilt, isFalse);
     });
   });
 }
