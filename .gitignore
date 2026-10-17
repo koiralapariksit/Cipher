@@ -39,6 +39,7 @@ build/web/
 
 # Android/Gradle related
 android/.gradle/
+android/.kotlin/
 android/app/build/
 android/local.properties
 **/android/debug.keystore
