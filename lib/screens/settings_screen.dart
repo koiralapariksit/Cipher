@@ -141,8 +141,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ),
                               subtitle: Text(
                                 _settings.invertTilt
-                                    ? 'Inverted: Tilt UP = Correct, Tilt DOWN = Pass'
-                                    : 'Default: Tilt DOWN = Correct, Tilt UP = Pass',
+                                    ? 'Inverted: Tilt UP = Pass, Tilt DOWN = Correct'
+                                    : 'Default: Tilt DOWN = Pass, Tilt UP = Correct',
                                 style: appFont(12, color: appTextDim),
                               ),
                               value: _settings.invertTilt,
