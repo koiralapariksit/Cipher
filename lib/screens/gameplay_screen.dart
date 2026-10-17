@@ -4,8 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../models/deck.dart';
 import '../models/game_round.dart';
+import '../services/argon_sensor_engine.dart';
 import '../services/game_controller.dart';
-import '../services/sensor_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import 'results_screen.dart';
@@ -16,12 +16,12 @@ import 'results_screen.dart';
 /// - 3-2-1 "Place on Forehead" countdown with large numerals and haptic ticks.
 /// - High-contrast responsive Bricolage Grotesque typography that never clips in landscape.
 /// - Razor-sharp 3px word-level feedback container ("Correct: [Word]" / "Pass: [Word]").
-/// - Exact 3-axis forehead sensor tilt with low-pass gravity filter and lockout.
-/// - Live telemetry debug indicator showing pitch angle degrees and TiltZone.
+/// - ArgonSensorEngine v2: Dynamic Forehead Baseline, Dual-Band Schmitt Hysteresis, Spike Gate.
+/// - Live telemetry debug indicator showing Rel Pitch, Baseline, and Engine State.
 /// - Lifecycle handling (WidgetsBindingObserver): auto-pause timer and sensors on background/minimize.
 /// - Modal "Game Paused" overlay with Resume and Quit to Menu options.
 /// - Tilt axis invert toggle in the top bar.
-/// - Manual fallback buttons on left (PASS) & right (CORRECT) edges.
+/// - Manual fallback buttons on left (PASS) & right (GOT IT) edges.
 class GameplayScreen extends StatefulWidget {
   final Deck deck;
   final int timerSeconds;
@@ -39,7 +39,7 @@ class GameplayScreen extends StatefulWidget {
 class _GameplayScreenState extends State<GameplayScreen>
     with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   late final GameController _controller;
-  late final SensorService _sensor;
+  late final ArgonSensorEngine _engine;
   final StorageService _storage = StorageService();
 
   // Visual feedback flash state
@@ -50,11 +50,11 @@ class _GameplayScreenState extends State<GameplayScreen>
   bool _isNavigatingToResults = false;
 
   // Real-time sensor debug telemetry notifier
-  final ValueNotifier<({double angle, double relativeAngle, TiltState state})>
+  final ValueNotifier<({double relPitch, double basePitch, TiltState state})>
       _sensorDebugNotifier = ValueNotifier((
-    angle: 0.0,
-    relativeAngle: 0.0,
-    state: TiltState.inactive,
+    relPitch: 0.0,
+    basePitch: 0.0,
+    state: TiltState.uncalibrated,
   ));
 
   @override
@@ -89,47 +89,41 @@ class _GameplayScreenState extends State<GameplayScreen>
     };
     _controller.onGameFinished = _onGameFinished;
 
-    // 4. Setup Sensor Service (single listener started here)
-    _sensor = SensorService();
-
-    _startSensor();
-    _controller.start();
-  }
-
-  void _startSensor() {
-    _sensor.startListening(
-      onCorrect: () {
-        if (_controller.phase == GamePhase.playing) {
-          final word = _controller.currentWord;
-          final cardIdx = _controller.cardIndex;
-          final sessionId = _controller.roundSessionId;
-          _triggerFeedback(isCorrect: true, word: word);
-          _controller.markCorrect(
-            expectedCardIndex: cardIdx,
-            expectedSessionId: sessionId,
-          );
-        }
-      },
-      onPass: () {
-        if (_controller.phase == GamePhase.playing) {
-          final word = _controller.currentWord;
-          final cardIdx = _controller.cardIndex;
-          final sessionId = _controller.roundSessionId;
-          _triggerFeedback(isCorrect: false, word: word);
-          _controller.markPass(
-            expectedCardIndex: cardIdx,
-            expectedSessionId: sessionId,
-          );
-        }
-      },
-      onTelemetry: (angle, relativeAngle, state) {
+    // 4. Setup Argon Sensor Engine
+    _engine = ArgonSensorEngine(
+      onActionTriggered: _handleEngineAction,
+      onTelemetryUpdate: (relPitch, basePitch, state) {
         _sensorDebugNotifier.value = (
-          angle: angle,
-          relativeAngle: relativeAngle,
+          relPitch: relPitch,
+          basePitch: basePitch,
           state: state,
         );
       },
     );
+
+    _engine.start();
+    _controller.start();
+  }
+
+  void _handleEngineAction(TiltAction action) {
+    if (_controller.phase == GamePhase.playing) {
+      final word = _controller.currentWord;
+      final cardIdx = _controller.cardIndex;
+      final sessionId = _controller.roundSessionId;
+      final isCorrect = action == TiltAction.correct;
+      _triggerFeedback(isCorrect: isCorrect, word: word);
+      if (isCorrect) {
+        _controller.markCorrect(
+          expectedCardIndex: cardIdx,
+          expectedSessionId: sessionId,
+        );
+      } else {
+        _controller.markPass(
+          expectedCardIndex: cardIdx,
+          expectedSessionId: sessionId,
+        );
+      }
+    }
   }
 
   void _triggerFeedback({required bool isCorrect, required String word}) {
@@ -171,15 +165,15 @@ class _GameplayScreenState extends State<GameplayScreen>
     if (mounted) setState(() {});
   }
 
-  void _toggleInvertTilt() {
+  void _toggleInvertZAxis() {
     setState(() {
-      _sensor.invertTilt = !_sensor.invertTilt;
+      _engine.invertZAxis = !_engine.invertZAxis;
     });
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          _sensor.invertTilt ? 'Tilt Axis Inverted' : 'Normal Tilt Axis',
+          _engine.invertZAxis ? 'Z-Axis Inverted (ON)' : 'Z-Axis Normal (OFF)',
           style: appFont(13, color: appText),
         ),
         duration: const Duration(seconds: 1),
@@ -202,7 +196,7 @@ class _GameplayScreenState extends State<GameplayScreen>
         state == AppLifecycleState.paused ||
         state == AppLifecycleState.hidden) {
       // Pause timers and sensor processing when leaving
-      _sensor.pause();
+      _engine.stop();
       _controller.pause();
     } else if (state == AppLifecycleState.resumed) {
       // Remain paused until user explicitly taps to resume
@@ -214,11 +208,11 @@ class _GameplayScreenState extends State<GameplayScreen>
 
   void _resumeFromPause() {
     _controller.resume();
-    _sensor.resume();
+    _engine.start();
   }
 
   void _quitToMenu() {
-    _sensor.stopListening();
+    _engine.stop();
     _controller.dispose();
     Navigator.of(context).pop();
   }
@@ -227,7 +221,7 @@ class _GameplayScreenState extends State<GameplayScreen>
     if (_isNavigatingToResults) return;
     _isNavigatingToResults = true;
 
-    _sensor.stopListening();
+    _engine.stop();
 
     if (_storage.settings.vibrationEnabled) {
       HapticFeedback.vibrate();
@@ -257,8 +251,7 @@ class _GameplayScreenState extends State<GameplayScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _flashTimer?.cancel();
-    _sensor.stopListening();
-    _sensor.dispose();
+    _engine.stop();
     _sensorDebugNotifier.dispose();
     _controller.dispose();
 
@@ -277,7 +270,7 @@ class _GameplayScreenState extends State<GameplayScreen>
 
   void _handleManualCorrect() {
     if (_controller.phase == GamePhase.playing) {
-      _sensor.lockManually();
+      _engine.reset();
       final word = _controller.currentWord;
       final cardIdx = _controller.cardIndex;
       final sessionId = _controller.roundSessionId;
@@ -291,7 +284,7 @@ class _GameplayScreenState extends State<GameplayScreen>
 
   void _handleManualPass() {
     if (_controller.phase == GamePhase.playing) {
-      _sensor.lockManually();
+      _engine.reset();
       final word = _controller.currentWord;
       final cardIdx = _controller.cardIndex;
       final sessionId = _controller.roundSessionId;
@@ -349,35 +342,44 @@ class _GameplayScreenState extends State<GameplayScreen>
                 ),
               ),
 
-            // Live Tilt Debug Indicator (Centered Subtle Low-Profile 3px Pill)
+            // Live Telemetry HUD at bottom (Rel Pitch, Baseline, Engine State)
             Positioned(
               bottom: 6,
               left: 0,
               right: 0,
-              child: ValueListenableBuilder<({double angle, double relativeAngle, TiltState state})>(
+              child: ValueListenableBuilder<({double relPitch, double basePitch, TiltState state})>(
                 valueListenable: _sensorDebugNotifier,
                 builder: (context, data, _) {
-                  final isArmed = data.state == TiltState.armed;
-                  final isCorrect = data.state == TiltState.candidateCorrect;
-                  final isPass = data.state == TiltState.candidatePass;
-                  final isCalibrating = data.state == TiltState.calibrating;
-                  final isLocked = data.state == TiltState.locked;
+                  final isNeutral = data.state == TiltState.neutralReady;
+                  final isHoldingCorrect = data.state == TiltState.holdingCorrect;
+                  final isHoldingPass = data.state == TiltState.holdingPass;
+                  final isUncalibrated = data.state == TiltState.uncalibrated;
 
-                  final Color badgeColor = isCorrect
+                  final Color badgeColor = isHoldingCorrect
                       ? appCorrect
-                      : (isPass
+                      : (isHoldingPass
                           ? appPass
-                          : (isArmed
+                          : (isNeutral
                               ? appText
-                              : (isCalibrating || isLocked
+                              : (isUncalibrated
                                   ? appPass.withValues(alpha: 0.8)
                                   : appTextDim)));
+
+                  final relSign = data.relPitch >= 0 ? '+' : '';
+                  final baseSign = data.basePitch >= 0 ? '+' : '';
+                  final stateLabel = switch (data.state) {
+                    TiltState.uncalibrated => 'UNCALIBRATED',
+                    TiltState.neutralReady => 'NEUTRAL READY',
+                    TiltState.holdingCorrect => 'HOLDING CORRECT',
+                    TiltState.holdingPass => 'HOLDING PASS',
+                    TiltState.waitForNeutral => 'WAIT FOR NEUTRAL',
+                  };
 
                   return Center(
                     child: IgnorePointer(
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 3),
+                            horizontal: 12, vertical: 3),
                         decoration: BoxDecoration(
                           color: appField,
                           borderRadius: BorderRadius.circular(appRadius),
@@ -387,11 +389,11 @@ class _GameplayScreenState extends State<GameplayScreen>
                           ),
                         ),
                         child: Text(
-                          '${data.state.name.toUpperCase()} • ${data.relativeAngle.toStringAsFixed(0)}° (Raw ${data.angle.toStringAsFixed(0)}°)',
+                          'REL PITCH: $relSign${data.relPitch.toStringAsFixed(1)}°  |  BASELINE: $baseSign${data.basePitch.toStringAsFixed(1)}°  |  STATE: $stateLabel',
                           style: appFont(
                             11,
                             color: badgeColor,
-                            weight: FontWeight.w500,
+                            weight: FontWeight.w600,
                             spacing: 0.3,
                           ),
                         ),
@@ -552,10 +554,10 @@ class _GameplayScreenState extends State<GameplayScreen>
                   const SizedBox(width: 8),
                   AppIconButton(
                     icon: Icons.swap_vert_rounded,
-                    tooltip: 'Invert Tilt Axis',
+                    tooltip: 'Invert Z-Axis',
                     size: 36,
-                    iconColor: _sensor.invertTilt ? appPass : appTextDim,
-                    onTap: _toggleInvertTilt,
+                    iconColor: _engine.invertZAxis ? appPass : appTextDim,
+                    onTap: _toggleInvertZAxis,
                   ),
                   const SizedBox(width: 8),
                   AppIconButton(
@@ -564,7 +566,7 @@ class _GameplayScreenState extends State<GameplayScreen>
                     size: 36,
                     iconColor: appTextDim,
                     onTap: () {
-                      _sensor.stopListening();
+                      _engine.stop();
                       _controller.pause();
                     },
                   ),
@@ -623,10 +625,10 @@ class _GameplayScreenState extends State<GameplayScreen>
                   ),
                 ),
 
-                // Right Thumb CORRECT Button
+                // Right Thumb GOT IT Button
                 if (showButtons)
                   _ThumbButton(
-                    label: 'CORRECT',
+                    label: 'GOT IT',
                     sublabel: 'Tilt Down ↓',
                     accentColor: appCorrect,
                     icon: Icons.check_rounded,
