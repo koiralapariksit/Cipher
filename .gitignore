@@ -4,6 +4,8 @@
 *.log
 *.pyc
 *.swp
+*.apk
+apks/
 .DS_Store
 .atom/
 .buildlog/
@@ -40,6 +42,7 @@ build/web/
 # Android/Gradle related
 android/.gradle/
 android/.kotlin/
+android/build/
 android/app/build/
 android/local.properties
 **/android/debug.keystore
