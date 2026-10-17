@@ -20,7 +20,6 @@ import 'results_screen.dart';
 /// - Live telemetry debug indicator showing Rel Pitch, Baseline, and Engine State.
 /// - Lifecycle handling (WidgetsBindingObserver): auto-pause timer and sensors on background/minimize.
 /// - Modal "Game Paused" overlay with Resume and Quit to Menu options.
-/// - Tilt axis invert toggle in the top bar.
 /// - Manual fallback buttons on left (PASS) & right (GOT IT) edges.
 class GameplayScreen extends StatefulWidget {
   final Deck deck;
@@ -89,8 +88,9 @@ class _GameplayScreenState extends State<GameplayScreen>
     };
     _controller.onGameFinished = _onGameFinished;
 
-    // 4. Setup Argon Sensor Engine
+    // 4. Setup Argon Sensor Engine with saved invertTilt preference
     _engine = ArgonSensorEngine(
+      invertZAxis: _storage.settings.invertTilt,
       onActionTriggered: _handleEngineAction,
       onTelemetryUpdate: (relPitch, basePitch, state) {
         _sensorDebugNotifier.value = (
@@ -163,28 +163,6 @@ class _GameplayScreenState extends State<GameplayScreen>
     final nextSound = !_storage.settings.soundEnabled;
     await _storage.updateSettings(_storage.settings.copyWith(soundEnabled: nextSound));
     if (mounted) setState(() {});
-  }
-
-  void _toggleInvertZAxis() {
-    setState(() {
-      _engine.invertZAxis = !_engine.invertZAxis;
-    });
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          _engine.invertZAxis ? 'Z-Axis Inverted (ON)' : 'Z-Axis Normal (OFF)',
-          style: appFont(13, color: appText),
-        ),
-        duration: const Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(appRadius),
-          side: const BorderSide(color: appLine, width: 0.8),
-        ),
-        backgroundColor: appBgMid,
-      ),
-    );
   }
 
   // ── Lifecycle Handling ───────────────────────────────────────────────────
@@ -550,14 +528,6 @@ class _GameplayScreenState extends State<GameplayScreen>
                     size: 36,
                     iconColor: _storage.settings.soundEnabled ? appText : appTextDim,
                     onTap: _toggleSound,
-                  ),
-                  const SizedBox(width: 8),
-                  AppIconButton(
-                    icon: Icons.swap_vert_rounded,
-                    tooltip: 'Invert Z-Axis',
-                    size: 36,
-                    iconColor: _engine.invertZAxis ? appPass : appTextDim,
-                    onTap: _toggleInvertZAxis,
                   ),
                   const SizedBox(width: 8),
                   AppIconButton(

@@ -114,6 +114,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               onChanged: (val) => _save(
                                   _settings.copyWith(showManualButtons: val)),
                             ),
+                            const Divider(
+                              height: 1,
+                              color: appLine,
+                            ),
+                            SwitchListTile(
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 6),
+                              secondary: Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  borderRadius:
+                                      BorderRadius.circular(appRadius),
+                                  color: appField,
+                                  border:
+                                      Border.all(color: appLine, width: 0.8),
+                                ),
+                                child: const Icon(Icons.swap_vert_rounded,
+                                    color: appText, size: 19),
+                              ),
+                              title: Text(
+                                'Invert Tilt Controls',
+                                style: appFont(15,
+                                    weight: FontWeight.w600, color: appText),
+                              ),
+                              subtitle: Text(
+                                _settings.invertTilt
+                                    ? 'Inverted: Tilt UP = Correct, Tilt DOWN = Pass'
+                                    : 'Default: Tilt DOWN = Correct, Tilt UP = Pass',
+                                style: appFont(12, color: appTextDim),
+                              ),
+                              value: _settings.invertTilt,
+                              activeThumbColor: appBgBottom,
+                              activeTrackColor: appText,
+                              inactiveTrackColor: appField,
+                              onChanged: (val) => _save(
+                                  _settings.copyWith(invertTilt: val)),
+                            ),
                           ],
                         ),
                       ),
