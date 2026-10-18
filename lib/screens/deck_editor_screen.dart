@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/deck.dart';
@@ -249,46 +248,6 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
     );
   }
 
-  void _shareDeckCode() {
-    final name = _nameController.text.trim();
-    if (name.isEmpty) {
-      _showSnack('Please give your deck a name before sharing.');
-      return;
-    }
-    if (_words.isEmpty) {
-      _showSnack('Please add some cards to your deck before sharing.');
-      return;
-    }
-
-    final deck = Deck(
-      id: widget.deck?.id ?? 'custom_${DateTime.now().millisecondsSinceEpoch}',
-      name: name,
-      emoji: _selectedEmoji,
-      colorValue: _selectedColor,
-      items: _words,
-      isCustom: true,
-      category: _selectedCategory,
-    );
-
-    final base64Code = base64Encode(utf8.encode(jsonEncode(deck.toJson())));
-    Clipboard.setData(ClipboardData(text: base64Code));
-
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Deck share code copied! Send it to a friend to import.',
-          style: appFont(14, color: appBgBottom, weight: FontWeight.w600),
-        ),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(appRadius),
-        ),
-        backgroundColor: appText,
-      ),
-    );
-  }
-
   Future<void> _saveDeck() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -361,13 +320,6 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
                       const Spacer(),
                       if (isEditing) ...[
                         AppIconButton(
-                          icon: Icons.share_outlined,
-                          tooltip: 'Share Deck Code (Base64)',
-                          size: 40,
-                          onTap: _shareDeckCode,
-                        ),
-                        const SizedBox(width: 8),
-                        AppIconButton(
                           icon: Icons.delete_outline_rounded,
                           tooltip: 'Delete Deck',
                           iconColor: appPass,
@@ -410,60 +362,6 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
                       children: [
                         // Preview Card
                         _buildPreviewHeader(),
-                        const SizedBox(height: 14),
-
-                        // Share Deck Code Action Tile
-                        GestureDetector(
-                          onTap: _shareDeckCode,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: appTile,
-                              borderRadius: BorderRadius.circular(appRadius),
-                              border: Border.all(color: appLine, width: 0.8),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    borderRadius:
-                                        BorderRadius.circular(appRadius),
-                                    color: appField,
-                                    border:
-                                        Border.all(color: appLine, width: 0.8),
-                                  ),
-                                  child: const Icon(Icons.share_outlined,
-                                      color: appText, size: 18),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Share Deck Code (Base64)',
-                                        style: appFont(14,
-                                            weight: FontWeight.w600,
-                                            color: appText),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        'Copy Base64 code to clipboard for friends to import',
-                                        style: appFont(12, color: appTextDim),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const Icon(Icons.copy_rounded,
-                                    color: appTextDim, size: 18),
-                              ],
-                            ),
-                          ),
-                        ),
                         const SizedBox(height: 18),
 
                         // Deck Name Input

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/deck.dart';
 import '../services/storage_service.dart';
+import '../theme/deck_colors.dart';
 import 'ai_deck_generator_screen.dart';
 import 'deck_editor_screen.dart';
 import 'gameplay_screen.dart';
@@ -14,7 +15,6 @@ const Color _bgTop = Color(0xFF343434);
 const Color _bgMid = Color(0xFF222222);
 const Color _bgBottom = Color(0xFF0A0A0A);
 const Color _field = Color(0x40000000);
-const Color _tile = Color(0x14FFFFFF);
 const Color _text = Color(0xFFF2F2F2);
 const Color _textDim = Color(0xFF8E8E8E);
 const Color _line = Color(0x24FFFFFF);
@@ -348,13 +348,15 @@ class _DeckTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = deckColorFor(deck);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.fromLTRB(14, 14, 10, 12),
         decoration: BoxDecoration(
-          color: _tile,
+          color: color,
           borderRadius: BorderRadius.circular(_radius),
+          border: Border.all(color: kInk.withValues(alpha: 0.15), width: 1.0),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -367,8 +369,13 @@ class _DeckTile extends StatelessWidget {
                     deck.name,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
-                    style: _font(17,
-                        weight: FontWeight.w600, spacing: -0.2, height: 1.15),
+                    style: _font(
+                      17,
+                      weight: FontWeight.w700,
+                      color: kInk,
+                      spacing: -0.2,
+                      height: 1.15,
+                    ),
                   ),
                 ),
                 if (onEdit != null)
@@ -377,7 +384,14 @@ class _DeckTile extends StatelessWidget {
                     behavior: HitTestBehavior.opaque,
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(6, 2, 4, 2),
-                      child: Text('Edit', style: _font(12, color: _textDim)),
+                      child: Text(
+                        'Edit',
+                        style: _font(
+                          12,
+                          weight: FontWeight.w600,
+                          color: kInk.withValues(alpha: 0.7),
+                        ),
+                      ),
                     ),
                   ),
                 GestureDetector(
@@ -390,7 +404,7 @@ class _DeckTile extends StatelessWidget {
                           ? Icons.star_rounded
                           : Icons.star_outline_rounded,
                       size: 20,
-                      color: isFavorite ? _text : _textDim,
+                      color: isFavorite ? kInk : kInk.withValues(alpha: 0.45),
                     ),
                   ),
                 ),
@@ -401,12 +415,24 @@ class _DeckTile extends StatelessWidget {
               padding: const EdgeInsets.only(right: 4),
               child: Row(
                 children: [
-                  Text('${deck.items.length} cards',
-                      style: _font(12, color: _textDim)),
+                  Text(
+                    '${deck.items.length} cards',
+                    style: _font(
+                      12,
+                      weight: FontWeight.w500,
+                      color: kInk.withValues(alpha: 0.75),
+                    ),
+                  ),
                   const Spacer(),
                   if (highScore > 0)
-                    Text('Best $highScore',
-                        style: _font(12, weight: FontWeight.w600)),
+                    Text(
+                      'Best $highScore',
+                      style: _font(
+                        12,
+                        weight: FontWeight.w700,
+                        color: kInk,
+                      ),
+                    ),
                 ],
               ),
             ),

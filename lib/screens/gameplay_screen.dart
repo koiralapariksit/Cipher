@@ -8,6 +8,7 @@ import '../services/argon_sensor_engine.dart';
 import '../services/game_controller.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import '../theme/deck_colors.dart';
 import 'results_screen.dart';
 
 /// Full-screen gameplay:
@@ -428,6 +429,7 @@ class _GameplayScreenState extends State<GameplayScreen>
 
   // ── Countdown Phase: 3-2-1 "Place on Forehead" ───────────────────────────
   Widget _buildCountdown() {
+    final deckColor = deckColorFor(widget.deck);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -435,13 +437,13 @@ class _GameplayScreenState extends State<GameplayScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             decoration: BoxDecoration(
-              color: appTile,
+              color: deckColor,
               borderRadius: BorderRadius.circular(appRadius),
-              border: Border.all(color: appLine, width: 0.8),
+              border: Border.all(color: kInk.withValues(alpha: 0.15), width: 1.0),
             ),
             child: Text(
               widget.deck.name,
-              style: appFont(14, weight: FontWeight.w600, color: appText),
+              style: appFont(14, weight: FontWeight.w700, color: kInk),
             ),
           ),
           const SizedBox(height: 8),
@@ -489,6 +491,7 @@ class _GameplayScreenState extends State<GameplayScreen>
   // ── Active Gameplay View: Ergonomic Landscape Layout ─────────────────────
   Widget _buildPlaying() {
     final showButtons = _storage.settings.showManualButtons;
+    final deckColor = deckColorFor(widget.deck);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
@@ -503,14 +506,14 @@ class _GameplayScreenState extends State<GameplayScreen>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 decoration: BoxDecoration(
-                  color: appTile,
+                  color: deckColor,
                   borderRadius: BorderRadius.circular(appRadius),
-                  border: Border.all(color: appLine, width: 0.8),
+                  border: Border.all(color: kInk.withValues(alpha: 0.15), width: 1.0),
                 ),
                 child: Text(
                   widget.deck.name,
                   style: appFont(14,
-                      weight: FontWeight.w600, color: appText),
+                      weight: FontWeight.w700, color: kInk),
                 ),
               ),
               Row(
@@ -569,9 +572,9 @@ class _GameplayScreenState extends State<GameplayScreen>
                     padding: const EdgeInsets.symmetric(
                         horizontal: 24, vertical: 12),
                     decoration: BoxDecoration(
-                      color: appTile,
+                      color: deckColor,
                       borderRadius: BorderRadius.circular(appRadius),
-                      border: Border.all(color: appLine, width: 0.8),
+                      border: Border.all(color: kInk.withValues(alpha: 0.15), width: 1.0),
                     ),
                     child: Center(
                       child: FittedBox(
@@ -584,8 +587,8 @@ class _GameplayScreenState extends State<GameplayScreen>
                             maxLines: 2,
                             style: appFont(
                               56,
-                              weight: FontWeight.w700,
-                              color: appText,
+                              weight: FontWeight.w800,
+                              color: kInk,
                               spacing: -1.0,
                             ),
                           ),
