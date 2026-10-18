@@ -201,6 +201,8 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child: TextField(
                 controller: controller,
+                enableSuggestions: false,
+                autocorrect: false,
                 style: appFont(13),
                 cursorColor: appText,
                 obscureText: true,
@@ -424,6 +426,8 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
                               child: TextField(
                                 controller: _topicController,
                                 enabled: !_isGenerating,
+                                enableSuggestions: false,
+                                autocorrect: false,
                                 style: appFont(15, weight: FontWeight.w500),
                                 cursorColor: appText,
                                 decoration: InputDecoration(

@@ -195,6 +195,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     child: TextField(
                       controller: _searchController,
+                      enableSuggestions: false,
+                      autocorrect: false,
                       style: _font(15),
                       cursorColor: _text,
                       onChanged: (val) => setState(() => _searchQuery = val),

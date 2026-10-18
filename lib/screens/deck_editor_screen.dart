@@ -156,6 +156,8 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
           child: TextField(
             controller: controller,
             autofocus: true,
+            enableSuggestions: false,
+            autocorrect: false,
             style: appFont(15, color: appText),
             cursorColor: appText,
             decoration: InputDecoration(
@@ -376,6 +378,8 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
                           ),
                           child: TextFormField(
                             controller: _nameController,
+                            enableSuggestions: false,
+                            autocorrect: false,
                             style: appFont(15, color: appText),
                             cursorColor: appText,
                             decoration: InputDecoration(
@@ -587,6 +591,8 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
                           ),
                           child: TextField(
                             controller: _wordInputController,
+                            enableSuggestions: false,
+                            autocorrect: false,
                             style: appFont(14, color: appText),
                             cursorColor: appText,
                             textInputAction: TextInputAction.done,
