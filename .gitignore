@@ -6,6 +6,8 @@
 *.swp
 *.apk
 apks/
+.env
+*.env
 .DS_Store
 .atom/
 .buildlog/
