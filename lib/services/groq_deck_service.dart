@@ -71,6 +71,7 @@ class GroqDeckService {
     final List<String> snippets = [];
 
     // 1. Wikipedia OpenSearch & Query API (High factual grounding)
+    final List<String> topTitles = [];
     try {
       final encoded = Uri.encodeComponent(topic);
       final wikiUri = Uri.parse(
@@ -91,11 +92,43 @@ class GroqDeckService {
           final rawSnippet = item['snippet']?.toString() ?? '';
           final cleanSnippet = _sanitizeSnippet(rawSnippet);
           if (title.isNotEmpty) {
+            topTitles.add(title);
             snippets.add('$title: $cleanSnippet');
           }
         }
       }
     } catch (_) {}
+
+    // 1b. Wikipedia Deep Encyclopedic Extract for top matches
+    if (topTitles.isNotEmpty) {
+      try {
+        final joinedTitles = topTitles.take(2).map(Uri.encodeComponent).join('|');
+        final extUri = Uri.parse(
+          'https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&titles=$joinedTitles&format=json',
+        );
+
+        final extResponse = await http
+            .get(extUri, headers: {'User-Agent': 'CipherApp/1.0'})
+            .timeout(const Duration(seconds: 3));
+
+        if (extResponse.statusCode == 200) {
+          final extData = jsonDecode(extResponse.body) as Map<String, dynamic>;
+          final pages = extData['query']?['pages'] as Map<String, dynamic>? ?? {};
+          for (final page in pages.values) {
+            if (page is Map<String, dynamic>) {
+              final title = page['title']?.toString() ?? '';
+              final extract = page['extract']?.toString() ?? '';
+              if (extract.isNotEmpty) {
+                final cleanExtract = extract.length > 350
+                    ? '${extract.substring(0, 350)}...'
+                    : extract;
+                snippets.add('ENCYCLOPEDIC RECORD [$title]: $cleanExtract');
+              }
+            }
+          }
+        }
+      } catch (_) {}
+    }
 
     // 2. DuckDuckGo Instant Answer API (Supplementary grounding)
     if (snippets.length < 3) {
@@ -205,7 +238,7 @@ class GroqDeckService {
           'messages': [
             {'role': 'user', 'content': prompt},
           ],
-          'temperature': 0.7,
+          'temperature': 0.2,
           'response_format': {'type': 'json_object'},
         };
 
@@ -267,36 +300,39 @@ class GroqDeckService {
     throw Exception(lastError ?? 'Failed to generate deck with Groq.');
   }
 
-  /// Builds the prompt according to the strict architectural specification.
+  /// Builds the prompt according to the strict two-step verification specification.
   String _buildPrompt({
     required String topic,
     required int cardCount,
     required String difficulty,
     required String webSearchSnippets,
   }) {
-    return '''You are the core intelligence engine for "Cipher", a fast-paced forehead party guessing game.
-Generate a JSON object for the topic "$topic" with exactly $cardCount unique items at "$difficulty" difficulty.
+    return '''You are the factual accuracy and intelligence engine for "Cipher", a party guessing game.
+Target Topic: "$topic"
+Target Count: $cardCount
+Target Difficulty: "$difficulty"
 
-LIVE WEB CONTEXT FOR GROUNDING:
+LIVE WEB / ENCYCLOPEDIC CONTEXT:
 $webSearchSnippets
 
-STRICT OUTPUT SCHEMA (JSON OBJECT ONLY):
+STRICT VERIFICATION & FACT-CHECKING RULES:
+1. STRICT QUALIFICATION CHECK: Every single item MUST strictly satisfy all conditions in the prompt.
+   - Example failure: If topic is "Ballon d'Or Winners", nominees, runner-ups, and Kopa/Yashin trophy winners (e.g., Jude Bellingham, Andrés Iniesta, Neymar, Thierry Henry) are STRICTLY DISQUALIFIED. Only official winners (e.g., Lionel Messi, Cristiano Ronaldo, Kaká, Ronaldinho, Luka Modrić, Karim Benzema, Rodri, Rivaldo, Zidane, George Weah, Marco van Basten) are permitted.
+2. ZERO TOLERANCE FOR FALSE POSITIVES: Do not include an item simply because it is famous or associated with the subject. If an entity did not definitively achieve/meet the requested criteria, exclude it.
+3. NEGATIVE CHECK BEFORE EMITTING:
+   - Does this item strictly meet the exact query criteria? If doubtful, discard and replace.
+4. QUANTITY & DIVERSITY:
+   - Emit exactly $cardCount unique items.
+   - If the exact historical pool is smaller than $cardCount, include all valid entities across eras (historical and modern) rather than inventing or padding with unqualified entries.
+
+OUTPUT SCHEMA (RAW JSON OBJECT ONLY):
 {
   "name": "$topic",
-  "emoji": "<1 fitting emoji>",
+  "emoji": "<single relevant emoji>",
   "category": "AI Custom",
   "colorValue": 4280391456,
   "items": ["Item 1", "Item 2", ...]
-}
-
-CRITICAL PLAYABILITY & ANTI-HALLUCINATION RULES:
-1. 100% REAL ENTITIES ONLY: Never invent fake people, fake players, or fake terms to pad the list. Use the provided web context and verified real-world knowledge.
-2. CARD LENGTH: Each item must be 1 to 3 words maximum, punchy, and actable/describable in under 10 seconds.
-3. DIFFICULTY CALIBRATION:
-   - Casual: Globally famous household names and obvious terms.
-   - Party: Recognizable fan-favorites, pop-culture staples, and fun references.
-   - Hardcore: Deep-cut cult heroes, specific terminology, and nerdy lore (100% real).
-4. THE PLAYABILITY PIVOT (NICHE TOPIC FALLBACK): If "$topic" is ultra-obscure (e.g., 5th division regional sports rosters) and does not have $cardCount distinct, recognizable real-world entities, include the top real matches first and seamlessly fill the remaining slots with closely related iconic legends, clubs, or terms from that broader sport/category so the party game remains fun and playable.''';
+}''';
   }
 
   /// Parses, sanitizes, and verifies output against schema constraints.
