@@ -377,7 +377,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: Column(
                           children: [
                             Text(
-                              'Heads Guess',
+                              'Cipher',
                               style: appFont(14,
                                   weight: FontWeight.w600, color: appTextDim),
                             ),

@@ -168,7 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.baseline,
                     textBaseline: TextBaseline.alphabetic,
                     children: [
-                      Text('Heads Guess',
+                      Text('Cipher',
                           style: _font(32,
                               weight: FontWeight.w700, spacing: -0.8)),
                       const Spacer(),

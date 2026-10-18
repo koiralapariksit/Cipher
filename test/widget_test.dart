@@ -8,7 +8,7 @@ void main() {
   });
 
   testWidgets('App renders without crashing', (WidgetTester tester) async {
-    await tester.pumpWidget(const HeadsGuessApp());
-    expect(find.text('Heads Guess'), findsOneWidget);
+    await tester.pumpWidget(const CipherApp());
+    expect(find.text('Cipher'), findsOneWidget);
   });
 }

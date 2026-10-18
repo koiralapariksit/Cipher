@@ -6,16 +6,16 @@ import 'theme/app_theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await StorageService().init();
-  runApp(const HeadsGuessApp());
+  runApp(const CipherApp());
 }
 
-class HeadsGuessApp extends StatelessWidget {
-  const HeadsGuessApp({super.key});
+class CipherApp extends StatelessWidget {
+  const CipherApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Heads Guess',
+      title: 'Cipher',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: appBgBottom,
@@ -29,3 +29,5 @@ class HeadsGuessApp extends StatelessWidget {
     );
   }
 }
+
+typedef HeadsGuessApp = CipherApp;
