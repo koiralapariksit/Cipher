@@ -1,7 +1,9 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../models/deck.dart';
+import '../services/groq_deck_service.dart';
 import '../theme/app_theme.dart';
+import 'gameplay_screen.dart';
 
 class AiDeckGeneratorScreen extends StatefulWidget {
   const AiDeckGeneratorScreen({super.key});
@@ -13,6 +15,7 @@ class AiDeckGeneratorScreen extends StatefulWidget {
 class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
     with SingleTickerProviderStateMixin {
   final TextEditingController _topicController = TextEditingController();
+  final GroqDeckService _groqService = GroqDeckService();
 
   int _selectedCardCount = 25;
   String _selectedVibe = 'Party';
@@ -86,8 +89,7 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
     );
   }
 
-  /// Placeholder for the direct backend HTTP/LLM API integration.
-  /// Displays an anti-spoiler encrypted loading state and prepares the payload.
+  /// Full in-app Groq + Live Web Search AI Deck Generator pipeline.
   Future<void> _onGenerateDeckPressed() async {
     final topic = _topicController.text.trim();
     if (topic.isEmpty) {
@@ -111,39 +113,228 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
     HapticFeedback.lightImpact();
     setState(() {
       _isGenerating = true;
-      _loadingMessage = 'Synthesizing keywords...';
+      _loadingMessage = 'Grounding via Live Web Search...';
     });
 
-    // Simulated anti-spoiler progression phases
-    await Future.delayed(const Duration(milliseconds: 700));
-    if (mounted && _isGenerating) {
-      setState(() => _loadingMessage = 'Encrypting payload...');
-    }
+    try {
+      final deck = await _groqService.generateDeck(
+        topic: topic,
+        cardCount: _selectedCardCount,
+        difficulty: _selectedVibe,
+        onProgress: (step) {
+          if (mounted) {
+            setState(() => _loadingMessage = step);
+          }
+        },
+      );
 
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (mounted && _isGenerating) {
-      setState(() => _loadingMessage = 'Sealing deck into library...');
-    }
+      if (!mounted) return;
 
-    await Future.delayed(const Duration(milliseconds: 700));
+      setState(() {
+        _isGenerating = false;
+        _loadingMessage = 'Encrypting Deck...';
+      });
+
+      HapticFeedback.heavyImpact();
+      _showDeckSuccessModal(deck);
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isGenerating = false;
+        _loadingMessage = 'Encrypting Deck...';
+      });
+
+      final errorMessage = e.toString().replaceAll('Exception:', '').trim();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            errorMessage,
+            style: appFont(13, color: appText),
+          ),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(appRadius),
+          ),
+          backgroundColor: appBgMid,
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: 'API Key',
+            textColor: appCorrect,
+            onPressed: _showApiKeyDialog,
+          ),
+        ),
+      );
+    }
+  }
+
+  /// Dialog allowing user to verify or update their Groq API Key on device.
+  void _showApiKeyDialog() async {
+    final currentKey = await _groqService.getApiKey() ?? '';
     if (!mounted) return;
 
-    setState(() {
-      _isGenerating = false;
-      _loadingMessage = 'Encrypting Deck...';
-    });
+    final controller = TextEditingController(text: currentKey);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Encrypted "$topic" ($_selectedCardCount cards · $_selectedVibe)! Ready for LLM API hookup.',
-          style: appFont(14, color: appBgBottom, weight: FontWeight.w600),
-        ),
-        behavior: SnackBarBehavior.floating,
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: appBgMid,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(appRadius),
+          side: const BorderSide(color: appLine, width: 0.8),
         ),
-        backgroundColor: appText,
+        title: Text(
+          'Groq API Key',
+          style: appFont(16, weight: FontWeight.w700),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Key is loaded automatically from .env. You can also override or update it here:',
+              style: appFont(12, color: appTextDim, height: 1.35),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              decoration: appFieldBox(),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: TextField(
+                controller: controller,
+                style: appFont(13),
+                cursorColor: appText,
+                obscureText: true,
+                decoration: InputDecoration(
+                  hintText: 'gsk_...',
+                  hintStyle: appFont(13, color: appTextDim),
+                  border: InputBorder.none,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text('Cancel', style: appFont(13, color: appTextDim)),
+          ),
+          TextButton(
+            onPressed: () async {
+              await _groqService.saveApiKey(controller.text.trim());
+              if (ctx.mounted) Navigator.of(ctx).pop();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Groq API Key updated successfully.',
+                        style: appFont(13, color: appText)),
+                    behavior: SnackBarBehavior.floating,
+                    backgroundColor: appBgMid,
+                  ),
+                );
+              }
+            },
+            child: Text('Save Key',
+                style: appFont(13,
+                    weight: FontWeight.w700, color: appCorrect)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Celebratory bottom sheet presenting the newly sealed encrypted deck.
+  void _showDeckSuccessModal(Deck deck) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: appBgMid,
+      isDismissible: false,
+      enableDrag: false,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(appRadius * 3)),
+        side: BorderSide(color: appLine, width: 0.8),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                deck.emoji,
+                style: const TextStyle(fontSize: 44),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                '${deck.name} Encrypted!',
+                textAlign: TextAlign.center,
+                style: appFont(20, weight: FontWeight.w700, spacing: -0.4),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${deck.items.length} cards sealed into your library with zero spoilers.',
+                textAlign: TextAlign.center,
+                style: appFont(13, color: appTextDim),
+              ),
+              const SizedBox(height: 24),
+
+              // Action 1: Play Now
+              GestureDetector(
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (_) => GameplayScreen(
+                        deck: deck,
+                        timerSeconds: 60,
+                      ),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: double.infinity,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: appText,
+                    borderRadius: BorderRadius.circular(appRadius),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    'PLAY THIS DECK NOW',
+                    style: appFont(13,
+                        weight: FontWeight.w700,
+                        spacing: 0.8,
+                        color: appBgBottom),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // Action 2: Back to Library
+              GestureDetector(
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  Navigator.of(context).pop();
+                },
+                child: Container(
+                  width: double.infinity,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: appTile,
+                    borderRadius: BorderRadius.circular(appRadius),
+                    border: Border.all(color: appLine, width: 0.8),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    'DONE · BACK TO DECKS',
+                    style: appFont(13,
+                        weight: FontWeight.w600, color: appText),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -183,7 +374,7 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'CIPHER PROTOCOL · DIRECT SYNTHESIS',
+                              'GROQ LLM · LIVE WEB GROUNDING',
                               style: appFont(10,
                                   weight: FontWeight.w600,
                                   spacing: 1.1,
@@ -191,6 +382,12 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
                             ),
                           ],
                         ),
+                      ),
+                      AppIconButton(
+                        icon: Icons.key_outlined,
+                        tooltip: 'Groq API Key',
+                        size: 38,
+                        onTap: _showApiKeyDialog,
                       ),
                     ],
                   ),
@@ -592,9 +789,9 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
                                     children: [
                                       Text(
                                         _loadingMessage.toUpperCase(),
-                                        style: appFont(12,
+                                        style: appFont(11,
                                             weight: FontWeight.w700,
-                                            spacing: 1.0,
+                                            spacing: 0.8,
                                             color: appText),
                                       ),
                                       const SizedBox(height: 2),
