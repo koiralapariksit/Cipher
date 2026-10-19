@@ -146,7 +146,7 @@ class _GameplayScreenState extends State<GameplayScreen>
 
     _flashTimer?.cancel();
     setState(() {
-      _flashColor = isCorrect ? appCorrect : appPass;
+      _flashColor = isCorrect ? kLime : kOrange;
       _flashLabel = isCorrect ? 'Correct: $word' : 'Pass: $word';
     });
 
@@ -298,11 +298,11 @@ class _GameplayScreenState extends State<GameplayScreen>
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                     decoration: BoxDecoration(
-                      color: _flashColor?.withValues(alpha: 0.20) ?? appTile,
+                      color: _flashColor ?? appTile,
                       borderRadius: BorderRadius.circular(appRadius),
                       border: Border.all(
-                        color: _flashColor ?? appLine,
-                        width: 0.8,
+                        color: kInk.withValues(alpha: 0.25),
+                        width: 1.0,
                       ),
                     ),
                     child: Text(
@@ -313,7 +313,7 @@ class _GameplayScreenState extends State<GameplayScreen>
                       style: appFont(
                         18,
                         weight: FontWeight.w700,
-                        color: _flashColor ?? appText,
+                        color: _flashColor != null ? kInk : appText,
                         spacing: -0.2,
                       ),
                     ),
@@ -335,13 +335,13 @@ class _GameplayScreenState extends State<GameplayScreen>
                   final isUncalibrated = data.state == TiltState.uncalibrated;
 
                   final Color badgeColor = isHoldingCorrect
-                      ? appCorrect
+                      ? kLime
                       : (isHoldingPass
-                          ? appPass
+                          ? kOrange
                           : (isNeutral
                               ? appText
                               : (isUncalibrated
-                                  ? appPass.withValues(alpha: 0.8)
+                                  ? kOrange.withValues(alpha: 0.8)
                                   : appTextDim)));
 
                   final relSign = data.relPitch >= 0 ? '+' : '';
@@ -559,7 +559,7 @@ class _GameplayScreenState extends State<GameplayScreen>
                   _ThumbButton(
                     label: 'PASS',
                     sublabel: 'Tilt Up ↑',
-                    accentColor: appPass,
+                    accentColor: kOrange,
                     icon: Icons.close_rounded,
                     onTap: _handleManualPass,
                   ),
@@ -603,7 +603,7 @@ class _GameplayScreenState extends State<GameplayScreen>
                   _ThumbButton(
                     label: 'GOT IT',
                     sublabel: 'Tilt Down ↓',
-                    accentColor: appCorrect,
+                    accentColor: kLime,
                     icon: Icons.check_rounded,
                     onTap: _handleManualCorrect,
                   ),
@@ -749,7 +749,7 @@ class _GameplayScreenState extends State<GameplayScreen>
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 11),
                       decoration: BoxDecoration(
-                        color: appText,
+                        color: kYellow,
                         borderRadius: BorderRadius.circular(appRadius),
                       ),
                       alignment: Alignment.center,
@@ -757,8 +757,8 @@ class _GameplayScreenState extends State<GameplayScreen>
                         'Resume',
                         style: appFont(
                           13,
-                          weight: FontWeight.w600,
-                          color: appBgBottom,
+                          weight: FontWeight.w700,
+                          color: kInk,
                         ),
                       ),
                     ),

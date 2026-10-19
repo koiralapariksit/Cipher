@@ -5,9 +5,14 @@ import 'package:heads_guess/theme/deck_colors.dart';
 
 void main() {
   group('DeckColors Tests', () {
-    test('kInk and kCream match neo-brutalist definitions', () {
+    test('neo-brutalist tokens match specified definitions', () {
+      expect(kBlue, const Color(0xFF2F5BFF));
       expect(kInk, const Color(0xFF1A1230));
+      expect(kInkDim, const Color(0xFF5E5778));
       expect(kCream, const Color(0xFFFFF6E3));
+      expect(kYellow, const Color(0xFFFFD60A));
+      expect(kLime, const Color(0xFFB8F400));
+      expect(kOrange, const Color(0xFFFF7A1A));
       expect(kDeckColors.length, 5);
     });
 
@@ -52,4 +57,3 @@ void main() {
     });
   });
 }
-
