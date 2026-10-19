@@ -3,9 +3,9 @@ import 'screens/splash_screen.dart';
 import 'services/storage_service.dart';
 import 'theme/app_theme.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await StorageService().init();
+  StorageService().init();
   runApp(const CipherApp());
 }
 

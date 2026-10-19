@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -24,12 +23,9 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _floatController;
-  Timer? _progressTimer;
-
-  double _progress = 0.08;
-  int _tipIndex = 0;
+  late final AnimationController _progressController;
 
   static const List<String> _loadingTips = [
     'Warming up the party decks...',
@@ -42,55 +38,44 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
+
     _floatController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1600),
     )..repeat(reverse: true);
 
-    _startLoadingSequence();
-  }
+    _progressController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    );
 
-  void _startLoadingSequence() {
-    const stepDuration = Duration(milliseconds: 240);
-    final rng = math.Random();
-
-    _progressTimer = Timer.periodic(stepDuration, (timer) {
-      if (!mounted) return;
-
-      setState(() {
-        _progress += 0.12 + (rng.nextDouble() * 0.09);
-        if (_progress >= 1.0) {
-          _progress = 1.0;
-          _tipIndex = _loadingTips.length - 1;
-          timer.cancel();
-          _navigateToHome();
-        } else {
-          _tipIndex = (_progress * (_loadingTips.length - 1)).floor();
-        }
-      });
+    _progressController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _navigateToHome();
+      }
     });
+
+    _progressController.forward();
   }
 
   void _navigateToHome() {
-    Future.delayed(const Duration(milliseconds: 350), () {
-      if (!mounted) return;
-      HapticFeedback.lightImpact();
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          transitionDuration: const Duration(milliseconds: 350),
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              const HomeScreen(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-        ),
-      );
-    });
+    if (!mounted) return;
+    HapticFeedback.lightImpact();
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 350),
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const HomeScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
   }
 
   @override
   void dispose() {
-    _progressTimer?.cancel();
+    _progressController.dispose();
     _floatController.dispose();
     super.dispose();
   }
@@ -137,270 +122,265 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    final percent = (_progress * 100).round();
+    return AnimatedBuilder(
+      animation: Listenable.merge([_floatController, _progressController]),
+      builder: (context, _) {
+        final percent =
+            (1 + (_progressController.value * 99)).round().clamp(1, 100);
+        final fillProgress =
+            (0.01 + (_progressController.value * 0.99)).clamp(0.01, 1.0);
+        final tipIndex = _progressController.value >= 1.0
+            ? _loadingTips.length - 1
+            : (_progressController.value * (_loadingTips.length - 1))
+                .floor()
+                .clamp(0, _loadingTips.length - 1);
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
-      child: Scaffold(
-        backgroundColor: _kBlue,
-        body: SafeArea(
-          child: Stack(
-            children: [
-              // 1. Top-Left Yellow Square Star Sticker
-              AnimatedBuilder(
-                animation: _floatController,
-                builder: (context, child) {
-                  final dy = math.sin(_floatController.value * math.pi) * -7;
-                  return Positioned(
-                    top: 36 + dy,
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle.light,
+          child: Scaffold(
+            backgroundColor: _kBlue,
+            body: SafeArea(
+              child: Stack(
+                children: [
+                  // 1. Top-Left Yellow Square Star Sticker
+                  Positioned(
+                    top: 36 +
+                        (math.sin(_floatController.value * math.pi) * -7),
                     left: 28,
-                    child: child!,
-                  );
-                },
-                child: Transform.rotate(
-                  angle: _rad(-9),
-                  child: Container(
-                    width: 58,
-                    height: 58,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: _kYellow,
-                      border: Border.all(color: _kInk, width: 3),
-                      boxShadow: _hardShadow(4),
+                    child: Transform.rotate(
+                      angle: _rad(-9),
+                      child: Container(
+                        width: 58,
+                        height: 58,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: _kYellow,
+                          border: Border.all(color: _kInk, width: 3),
+                          boxShadow: _hardShadow(4),
+                        ),
+                        child: const Icon(Icons.star_rounded,
+                            color: _kInk, size: 32),
+                      ),
                     ),
-                    child: const Icon(Icons.star_rounded, color: _kInk, size: 32),
                   ),
-                ),
-              ),
 
-              // 2. Top-Right Lime "PARTY READY" Rectangular Sticker
-              AnimatedBuilder(
-                animation: _floatController,
-                builder: (context, child) {
-                  final dy = math.cos(_floatController.value * math.pi) * -7;
-                  return Positioned(
-                    top: 72 + dy,
+                  // 2. Top-Right Lime "PARTY READY" Rectangular Sticker
+                  Positioned(
+                    top: 72 +
+                        (math.cos(_floatController.value * math.pi) * -7),
                     right: 24,
-                    child: child!,
-                  );
-                },
-                child: Transform.rotate(
-                  angle: _rad(7),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: _kLime,
-                      border: Border.all(color: _kInk, width: 3),
-                      boxShadow: _hardShadow(4),
-                    ),
-                    child: Text(
-                      'PARTY READY',
-                      style: GoogleFonts.bowlbyOne(
-                        fontSize: 13,
-                        color: _kInk,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              // 3. Lower-Left Cream Square Star Sticker (Positioned cleanly above text)
-              AnimatedBuilder(
-                animation: _floatController,
-                builder: (context, child) {
-                  final dy = math.cos(_floatController.value * math.pi) * 6;
-                  return Positioned(
-                    bottom: 175 + dy,
-                    left: 38,
-                    child: child!,
-                  );
-                },
-                child: Transform.rotate(
-                  angle: _rad(11),
-                  child: Container(
-                    width: 52,
-                    height: 52,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: _kCream,
-                      border: Border.all(color: _kInk, width: 3),
-                      boxShadow: _hardShadow(4),
-                    ),
-                    child: const Icon(Icons.star_rounded, color: _kInk, size: 28),
-                  ),
-                ),
-              ),
-
-              // 4. Main Foreground Layout
-              Padding(
-                padding: const EdgeInsets.fromLTRB(26, 24, 26, 32),
-                child: Column(
-                  children: [
-                    const Spacer(flex: 3),
-
-                    // Center Branding Stack
-                    Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _outlinedHeroTitle(),
-                          const SizedBox(height: 22),
-
-                          // Cream "FOREHEAD CHARADES" Rectangular Sticker
-                          Transform.rotate(
-                            angle: _rad(1.5),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 9),
-                              decoration: BoxDecoration(
-                                color: _kCream,
-                                border: Border.all(color: _kInk, width: 3),
-                                boxShadow: _hardShadow(4),
-                              ),
-                              child: Text(
-                                'FOREHEAD CHARADES',
-                                style: GoogleFonts.bowlbyOne(
-                                  fontSize: 14,
-                                  color: _kInk,
-                                  letterSpacing: 0.6,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Yellow "ACT • GUESS • LAUGH" Rectangular Sticker
-                          Transform.rotate(
-                            angle: _rad(-1.8),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 9),
-                              decoration: BoxDecoration(
-                                color: _kYellow,
-                                border: Border.all(color: _kInk, width: 3),
-                                boxShadow: _hardShadow(4),
-                              ),
-                              child: Text(
-                                'ACT • GUESS • LAUGH',
-                                style: GoogleFonts.bowlbyOne(
-                                  fontSize: 14,
-                                  color: _kInk,
-                                  letterSpacing: 0.6,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const Spacer(flex: 4),
-
-                    // Bottom Subway Surfers Style Loading Bar
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Loading Tip
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 180),
-                          child: Text(
-                            _loadingTips[_tipIndex],
-                            key: ValueKey<int>(_tipIndex),
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.dmSans(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: _kCream,
-                            ),
+                    child: Transform.rotate(
+                      angle: _rad(7),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: _kLime,
+                          border: Border.all(color: _kInk, width: 3),
+                          boxShadow: _hardShadow(4),
+                        ),
+                        child: Text(
+                          'PARTY READY',
+                          style: GoogleFonts.bowlbyOne(
+                            fontSize: 13,
+                            color: _kInk,
+                            letterSpacing: 0.5,
                           ),
                         ),
-                        const SizedBox(height: 12),
+                      ),
+                    ),
+                  ),
 
-                        // Progress Track
-                        Container(
-                          height: 36,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: _kCream,
-                            borderRadius: BorderRadius.circular(99),
-                            border: Border.all(color: _kInk, width: 3.5),
-                            boxShadow: _hardShadow(5),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(99),
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                final fillWidth =
-                                    (constraints.maxWidth * _progress)
-                                        .clamp(0.0, constraints.maxWidth);
-                                return Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 220),
-                                    curve: Curves.easeOutCubic,
-                                    width: fillWidth,
-                                    height: double.infinity,
-                                    decoration: const BoxDecoration(
-                                      color: _kLime,
-                                      border: Border(
-                                        right: BorderSide(
-                                            color: _kInk, width: 3.5),
-                                      ),
-                                    ),
-                                    child: CustomPaint(
-                                      painter: _CandyStripePainter(),
+                  // 3. Lower-Left Cream Square Star Sticker (Positioned cleanly above text)
+                  Positioned(
+                    bottom: 175 +
+                        (math.cos(_floatController.value * math.pi) * 6),
+                    left: 38,
+                    child: Transform.rotate(
+                      angle: _rad(11),
+                      child: Container(
+                        width: 52,
+                        height: 52,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: _kCream,
+                          border: Border.all(color: _kInk, width: 3),
+                          boxShadow: _hardShadow(4),
+                        ),
+                        child: const Icon(Icons.star_rounded,
+                            color: _kInk, size: 28),
+                      ),
+                    ),
+                  ),
+
+                  // 4. Main Foreground Layout
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(26, 24, 26, 32),
+                    child: Column(
+                      children: [
+                        const Spacer(flex: 3),
+
+                        // Center Branding Stack
+                        Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _outlinedHeroTitle(),
+                              const SizedBox(height: 22),
+
+                              // Cream "FOREHEAD CHARADES" Rectangular Sticker
+                              Transform.rotate(
+                                angle: _rad(1.5),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 20, vertical: 9),
+                                  decoration: BoxDecoration(
+                                    color: _kCream,
+                                    border: Border.all(color: _kInk, width: 3),
+                                    boxShadow: _hardShadow(4),
+                                  ),
+                                  child: Text(
+                                    'FOREHEAD CHARADES',
+                                    style: GoogleFonts.bowlbyOne(
+                                      fontSize: 14,
+                                      color: _kInk,
+                                      letterSpacing: 0.6,
                                     ),
                                   ),
-                                );
-                              },
-                            ),
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+
+                              // Yellow "ACT • GUESS • LAUGH" Rectangular Sticker
+                              Transform.rotate(
+                                angle: _rad(-1.8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 20, vertical: 9),
+                                  decoration: BoxDecoration(
+                                    color: _kYellow,
+                                    border: Border.all(color: _kInk, width: 3),
+                                    boxShadow: _hardShadow(4),
+                                  ),
+                                  child: Text(
+                                    'ACT • GUESS • LAUGH',
+                                    style: GoogleFonts.bowlbyOne(
+                                      fontSize: 14,
+                                      color: _kInk,
+                                      letterSpacing: 0.6,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 14),
 
-                        // Outlined 92% Counter
-                        Stack(
+                        const Spacer(flex: 4),
+
+                        // Bottom Subway Surfers Style Loading Bar
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Transform.translate(
-                              offset: const Offset(3, 3),
+                            // Loading Tip
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 180),
                               child: Text(
-                                '$percent%',
-                                style: GoogleFonts.bowlbyOne(
-                                  fontSize: 28,
-                                  color: _kInk,
+                                _loadingTips[tipIndex],
+                                key: ValueKey<int>(tipIndex),
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                  color: _kCream,
                                 ),
                               ),
                             ),
-                            Text(
-                              '$percent%',
-                              style: GoogleFonts.bowlbyOne(
-                                fontSize: 28,
-                                foreground: Paint()
-                                  ..style = PaintingStyle.stroke
-                                  ..strokeWidth = 4
-                                  ..color = _kInk,
+                            const SizedBox(height: 12),
+
+                            // Progress Track
+                            Container(
+                              height: 36,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: _kCream,
+                                borderRadius: BorderRadius.circular(99),
+                                border: Border.all(color: _kInk, width: 3.5),
+                                boxShadow: _hardShadow(5),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(99),
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final fillWidth =
+                                        (constraints.maxWidth * fillProgress)
+                                            .clamp(0.0, constraints.maxWidth);
+                                    return Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: Container(
+                                        width: fillWidth,
+                                        height: double.infinity,
+                                        decoration: const BoxDecoration(
+                                          color: _kLime,
+                                          border: Border(
+                                            right: BorderSide(
+                                                color: _kInk, width: 3.5),
+                                          ),
+                                        ),
+                                        child: CustomPaint(
+                                          painter: _CandyStripePainter(),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
                             ),
-                            Text(
-                              '$percent%',
-                              style: GoogleFonts.bowlbyOne(
-                                fontSize: 28,
-                                color: _kCream,
-                              ),
+                            const SizedBox(height: 14),
+
+                            // Outlined Counter (1% -> 100%)
+                            Stack(
+                              children: [
+                                Transform.translate(
+                                  offset: const Offset(3, 3),
+                                  child: Text(
+                                    '$percent%',
+                                    style: GoogleFonts.bowlbyOne(
+                                      fontSize: 28,
+                                      color: _kInk,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  '$percent%',
+                                  style: GoogleFonts.bowlbyOne(
+                                    fontSize: 28,
+                                    foreground: Paint()
+                                      ..style = PaintingStyle.stroke
+                                      ..strokeWidth = 4
+                                      ..color = _kInk,
+                                  ),
+                                ),
+                                Text(
+                                  '$percent%',
+                                  style: GoogleFonts.bowlbyOne(
+                                    fontSize: 28,
+                                    color: _kCream,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

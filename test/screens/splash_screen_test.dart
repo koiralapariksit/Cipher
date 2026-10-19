@@ -25,7 +25,7 @@ void main() {
     expect(find.text('ACT • GUESS • LAUGH'), findsOneWidget);
     expect(find.text('PARTY READY'), findsOneWidget);
     expect(find.text('Warming up the party decks...'), findsOneWidget);
-    expect(find.text('8%'), findsNWidgets(3));
+    expect(find.text('1%'), findsNWidgets(3));
 
     // Advance periodic progress timer steps
     await tester.pump(const Duration(milliseconds: 750));
