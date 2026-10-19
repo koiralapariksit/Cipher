@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../services/storage_service.dart';
 import 'home_screen.dart';
 
 const Color _kBlue = Color(0xFF2F5BFF);
@@ -26,51 +27,68 @@ class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
   late final AnimationController _floatController;
   late final AnimationController _progressController;
-
-  static const List<String> _loadingTips = [
-    'Warming up the party decks...',
-    'Calibrating forehead tilt sensors...',
-    'Shuffling movies, animals & food cards...',
-    'Polishing neo-brutalist stickers...',
-    "Let's Go!",
-  ];
+  late final Animation<double> _progressAnimation;
 
   @override
   void initState() {
     super.initState();
 
+    // 1. Sticker floating animation controller (1600ms gentle sine/cosine)
     _floatController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1600),
     )..repeat(reverse: true);
 
+    // 2. Continuous 0% -> 100% arcade progress controller (3600ms)
     _progressController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1800),
+      duration: const Duration(milliseconds: 3600),
+    );
+
+    _progressAnimation = CurvedAnimation(
+      parent: _progressController,
+      curve: Curves.linear,
     );
 
     _progressController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
-        _navigateToHome();
+        _onProgressCompleted();
       }
     });
 
-    _progressController.forward();
+    // 3. Post-frame warmup gate: render frame 1 sitting at 0% first, then warmup & start
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        await Future.wait([
+          StorageService().init(),
+          GoogleFonts.pendingFonts(),
+        ]).timeout(const Duration(milliseconds: 150));
+      } catch (_) {}
+
+      // Settle delay so user clearly sees the splash screen rendered at 0%
+      await Future.delayed(const Duration(milliseconds: 400));
+      if (!mounted) return;
+      _progressController.forward(from: 0.0);
+    });
   }
 
-  void _navigateToHome() {
-    if (!mounted) return;
-    HapticFeedback.lightImpact();
-    Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 350),
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const HomeScreen(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-      ),
-    );
+  void _onProgressCompleted() {
+    // Hold at 100% for 450ms so user clearly registers 100% and "Let's Go!"
+    Future.delayed(const Duration(milliseconds: 450), () {
+      if (!mounted) return;
+      HapticFeedback.lightImpact();
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          transitionDuration: const Duration(milliseconds: 400),
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const HomeScreen(),
+          transitionsBuilder:
+              (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
+      );
+    });
   }
 
   @override
@@ -78,6 +96,14 @@ class _SplashScreenState extends State<SplashScreen>
     _progressController.dispose();
     _floatController.dispose();
     super.dispose();
+  }
+
+  String _tipForPercent(int percent) {
+    if (percent < 25) return 'Warming up the party decks...';
+    if (percent < 50) return 'Calibrating forehead tilt sensors...';
+    if (percent < 75) return 'Shuffling movies, animals & food cards...';
+    if (percent < 95) return 'Polishing neo-brutalist stickers...';
+    return "Let's Go!";
   }
 
   /// Renders crisp 3D neo-brutalist outlined & shadowed display text
@@ -125,15 +151,9 @@ class _SplashScreenState extends State<SplashScreen>
     return AnimatedBuilder(
       animation: Listenable.merge([_floatController, _progressController]),
       builder: (context, _) {
-        final percent =
-            (1 + (_progressController.value * 99)).round().clamp(1, 100);
-        final fillProgress =
-            (0.01 + (_progressController.value * 0.99)).clamp(0.01, 1.0);
-        final tipIndex = _progressController.value >= 1.0
-            ? _loadingTips.length - 1
-            : (_progressController.value * (_loadingTips.length - 1))
-                .floor()
-                .clamp(0, _loadingTips.length - 1);
+        final double progressValue = _progressAnimation.value.clamp(0.0, 1.0);
+        final int percent = (progressValue * 100).round().clamp(0, 100);
+        final String tip = _tipForPercent(percent);
 
         return AnnotatedRegion<SystemUiOverlayStyle>(
           value: SystemUiOverlayStyle.light,
@@ -191,9 +211,9 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
 
-                  // 3. Lower-Left Cream Square Star Sticker (Positioned cleanly above text)
+                  // 3. Lower-Left Cream Square Star Sticker (Calibrated at bottom: 180, left: 38)
                   Positioned(
-                    bottom: 175 +
+                    bottom: 180 +
                         (math.cos(_floatController.value * math.pi) * 6),
                     left: 38,
                     child: Transform.rotate(
@@ -282,12 +302,12 @@ class _SplashScreenState extends State<SplashScreen>
                         Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Loading Tip
+                            // Cycling Loading Tip
                             AnimatedSwitcher(
                               duration: const Duration(milliseconds: 180),
                               child: Text(
-                                _loadingTips[tipIndex],
-                                key: ValueKey<int>(tipIndex),
+                                tip,
+                                key: ValueKey<String>(tip),
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.dmSans(
                                   fontSize: 15,
@@ -298,7 +318,7 @@ class _SplashScreenState extends State<SplashScreen>
                             ),
                             const SizedBox(height: 12),
 
-                            // Progress Track
+                            // Chunky Progress Track (36px, _kCream fill, 3.5px border, 5px shadow)
                             Container(
                               height: 36,
                               width: double.infinity,
@@ -312,23 +332,29 @@ class _SplashScreenState extends State<SplashScreen>
                                 borderRadius: BorderRadius.circular(99),
                                 child: LayoutBuilder(
                                   builder: (context, constraints) {
-                                    final fillWidth =
-                                        (constraints.maxWidth * fillProgress)
-                                            .clamp(0.0, constraints.maxWidth);
+                                    final double fillWidth = percent > 0
+                                        ? math.max(16.0,
+                                            constraints.maxWidth * progressValue)
+                                        : 0.0;
+
                                     return Align(
                                       alignment: Alignment.centerLeft,
                                       child: Container(
                                         width: fillWidth,
                                         height: double.infinity,
-                                        decoration: const BoxDecoration(
+                                        decoration: BoxDecoration(
                                           color: _kLime,
-                                          border: Border(
-                                            right: BorderSide(
-                                                color: _kInk, width: 3.5),
-                                          ),
+                                          border: fillWidth > 0
+                                              ? const Border(
+                                                  right: BorderSide(
+                                                      color: _kInk, width: 3.5),
+                                                )
+                                              : null,
                                         ),
                                         child: CustomPaint(
-                                          painter: _CandyStripePainter(),
+                                          painter: _CandyStripePainter(
+                                            stripeShift: progressValue * 8.0,
+                                          ),
                                         ),
                                       ),
                                     );
@@ -338,7 +364,7 @@ class _SplashScreenState extends State<SplashScreen>
                             ),
                             const SizedBox(height: 14),
 
-                            // Outlined Counter (1% -> 100%)
+                            // 3D Outlined & Shadowed Counter (0% -> 100%)
                             Stack(
                               children: [
                                 Transform.translate(
@@ -386,23 +412,39 @@ class _SplashScreenState extends State<SplashScreen>
 }
 
 class _CandyStripePainter extends CustomPainter {
+  final double stripeShift;
+
+  _CandyStripePainter({this.stripeShift = 0.0});
+
   @override
   void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0) return;
+
     final paint = Paint()
       ..color = const Color(0xFF98CC00)
       ..strokeWidth = 12
       ..style = PaintingStyle.stroke;
 
     const double step = 28;
-    for (double x = -size.height; x < size.width + size.height; x += step) {
+    final shift = (stripeShift * step) % step;
+
+    canvas.save();
+    canvas.clipRect(Rect.fromLTWH(0, 0, size.width, size.height));
+
+    for (double x = -size.height - step + shift;
+        x < size.width + size.height + step;
+        x += step) {
       canvas.drawLine(
         Offset(x, size.height),
         Offset(x + size.height, 0),
         paint,
       );
     }
+
+    canvas.restore();
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _CandyStripePainter oldDelegate) =>
+      oldDelegate.stripeShift != stripeShift;
 }
