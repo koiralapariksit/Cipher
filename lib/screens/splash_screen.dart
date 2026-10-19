@@ -1,11 +1,21 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../theme/deck_colors.dart';
 import 'home_screen.dart';
 
-/// Neo-Brutalist Arcade Subway-Surfers Style Loading SplashScreen.
+const Color _kBlue = Color(0xFF2F5BFF);
+const Color _kInk = Color(0xFF1A1230);
+const Color _kCream = Color(0xFFFFF6E3);
+const Color _kYellow = Color(0xFFFFD60A);
+const Color _kLime = Color(0xFFB8F400);
+
+double _rad(double deg) => deg * math.pi / 180;
+
+List<BoxShadow> _hardShadow([double d = 4]) =>
+    [BoxShadow(color: _kInk, offset: Offset(d, d), blurRadius: 0)];
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -14,529 +24,405 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen>
-    with TickerProviderStateMixin {
-  late final AnimationController _bobbingController;
-  late final AnimationController _stripeController;
-  late final AnimationController _progressController;
-  late final Animation<double> _progressAnimation;
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _floatController;
+  Timer? _progressTimer;
 
-  static const List<String> _statusTips = [
+  double _progress = 0.08;
+  int _tipIndex = 0;
+
+  static const List<String> _loadingTips = [
     'Warming up the party decks...',
     'Calibrating forehead tilt sensors...',
     'Shuffling movies, animals & food cards...',
+    'Polishing neo-brutalist stickers...',
     "Let's Go!",
   ];
 
   @override
   void initState() {
     super.initState();
-
-    // Gentle bobbing for floating stickers
-    _bobbingController = AnimationController(
+    _floatController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2400),
-    )..repeat();
+      duration: const Duration(milliseconds: 1600),
+    )..repeat(reverse: true);
 
-    // Infinite scrolling for diagonal candy stripes
-    _stripeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 700),
-    )..repeat();
+    _startLoadingSequence();
+  }
 
-    // Smooth arcade progress loading bar (2.2s)
-    _progressController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2200),
-    );
+  void _startLoadingSequence() {
+    const stepDuration = Duration(milliseconds: 240);
+    final rng = math.Random();
 
-    _progressAnimation = CurvedAnimation(
-      parent: _progressController,
-      curve: Curves.easeInOutCubic,
-    );
+    _progressTimer = Timer.periodic(stepDuration, (timer) {
+      if (!mounted) return;
 
-    _progressController.addStatusListener((status) {
-      if (status == AnimationStatus.completed && mounted) {
-        Navigator.of(context).pushReplacement(
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const HomeScreen(),
-            transitionsBuilder: (context, anim, _, child) =>
-                FadeTransition(opacity: anim, child: child),
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
-        );
-      }
+      setState(() {
+        _progress += 0.12 + (rng.nextDouble() * 0.09);
+        if (_progress >= 1.0) {
+          _progress = 1.0;
+          _tipIndex = _loadingTips.length - 1;
+          timer.cancel();
+          _navigateToHome();
+        } else {
+          _tipIndex = (_progress * (_loadingTips.length - 1)).floor();
+        }
+      });
     });
+  }
 
-    _progressController.forward();
+  void _navigateToHome() {
+    Future.delayed(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      HapticFeedback.lightImpact();
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          transitionDuration: const Duration(milliseconds: 350),
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const HomeScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
+      );
+    });
   }
 
   @override
   void dispose() {
-    _bobbingController.dispose();
-    _stripeController.dispose();
-    _progressController.dispose();
+    _progressTimer?.cancel();
+    _floatController.dispose();
     super.dispose();
   }
 
-  String _currentTip(double progress) {
-    if (progress < 0.28) return _statusTips[0];
-    if (progress < 0.62) return _statusTips[1];
-    if (progress < 0.90) return _statusTips[2];
-    return _statusTips[3];
+  /// Renders crisp 3D neo-brutalist outlined & shadowed display text
+  Widget _outlinedHeroTitle() {
+    final baseStyle = GoogleFonts.bowlbyOne(
+      fontSize: 66,
+      height: 0.95,
+      letterSpacing: -1.0,
+    );
+
+    return Transform.rotate(
+      angle: _rad(-4.5),
+      child: Stack(
+        children: [
+          // Deep Ink Hard Offset Block Shadow
+          Transform.translate(
+            offset: const Offset(5, 6),
+            child: Text(
+              'Cipher!',
+              style: baseStyle.copyWith(color: _kInk),
+            ),
+          ),
+          // Crisp Ink Stroke Outline
+          Text(
+            'Cipher!',
+            style: baseStyle.copyWith(
+              foreground: Paint()
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = 6
+                ..color = _kInk,
+            ),
+          ),
+          // Cream Foreground Fill
+          Text(
+            'Cipher!',
+            style: baseStyle.copyWith(color: _kCream),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
+    final percent = (_progress * 100).round();
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: kBlue,
-        body: Stack(
-          children: [
-            // Decorative background soft circle (top-right)
-            Positioned(
-              right: -80,
-              top: -60,
-              child: Container(
-                width: 260,
-                height: 260,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: kYellow.withValues(alpha: 0.25),
+        backgroundColor: _kBlue,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              // 1. Top-Left Yellow Square Star Sticker
+              AnimatedBuilder(
+                animation: _floatController,
+                builder: (context, child) {
+                  final dy = math.sin(_floatController.value * math.pi) * -7;
+                  return Positioned(
+                    top: 36 + dy,
+                    left: 28,
+                    child: child!,
+                  );
+                },
+                child: Transform.rotate(
+                  angle: _rad(-9),
+                  child: Container(
+                    width: 58,
+                    height: 58,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: _kYellow,
+                      border: Border.all(color: _kInk, width: 3),
+                      boxShadow: _hardShadow(4),
+                    ),
+                    child: const Icon(Icons.star_rounded, color: _kInk, size: 32),
+                  ),
                 ),
               ),
-            ),
 
-            // Decorative background soft circle (bottom-left)
-            Positioned(
-              left: -70,
-              bottom: 120,
-              child: Container(
-                width: 220,
-                height: 220,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: kLime.withValues(alpha: 0.18),
+              // 2. Top-Right Lime "PARTY READY" Rectangular Sticker
+              AnimatedBuilder(
+                animation: _floatController,
+                builder: (context, child) {
+                  final dy = math.cos(_floatController.value * math.pi) * -7;
+                  return Positioned(
+                    top: 72 + dy,
+                    right: 24,
+                    child: child!,
+                  );
+                },
+                child: Transform.rotate(
+                  angle: _rad(7),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _kLime,
+                      border: Border.all(color: _kInk, width: 3),
+                      boxShadow: _hardShadow(4),
+                    ),
+                    child: Text(
+                      'PARTY READY',
+                      style: GoogleFonts.bowlbyOne(
+                        fontSize: 13,
+                        color: _kInk,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ),
 
-            // Floating Neo-Brutalist Sticker 1: Yellow Star ("★")
-            AnimatedBuilder(
-              animation: _bobbingController,
-              builder: (context, child) {
-                final angle = _bobbingController.value * 2 * math.pi;
-                final offsetY = math.sin(angle) * 8.0;
-                return Positioned(
-                  top: size.height * 0.12 + offsetY,
-                  left: 28,
-                  child: Transform.rotate(
-                    angle: -14 * math.pi / 180,
-                    child: Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: kYellow,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: kInk, width: 2.5),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: kInk,
-                            offset: Offset(3, 3),
-                            blurRadius: 0,
-                          ),
-                        ],
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        '★',
-                        style: GoogleFonts.bowlbyOne(
-                          fontSize: 26,
-                          color: kInk,
-                          height: 1.0,
-                        ),
-                      ),
+              // 3. Lower-Left Cream Square Star Sticker (Positioned cleanly above text)
+              AnimatedBuilder(
+                animation: _floatController,
+                builder: (context, child) {
+                  final dy = math.cos(_floatController.value * math.pi) * 6;
+                  return Positioned(
+                    bottom: 175 + dy,
+                    left: 38,
+                    child: child!,
+                  );
+                },
+                child: Transform.rotate(
+                  angle: _rad(11),
+                  child: Container(
+                    width: 52,
+                    height: 52,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: _kCream,
+                      border: Border.all(color: _kInk, width: 3),
+                      boxShadow: _hardShadow(4),
                     ),
+                    child: const Icon(Icons.star_rounded, color: _kInk, size: 28),
                   ),
-                );
-              },
-            ),
+                ),
+              ),
 
-            // Floating Neo-Brutalist Sticker 2: "PARTY READY" Pill
-            AnimatedBuilder(
-              animation: _bobbingController,
-              builder: (context, child) {
-                final angle = _bobbingController.value * 2 * math.pi;
-                final offsetY = math.cos(angle) * 7.5;
-                return Positioned(
-                  top: size.height * 0.14 + offsetY,
-                  right: 24,
-                  child: Transform.rotate(
-                    angle: 8 * math.pi / 180,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 7,
-                      ),
-                      decoration: BoxDecoration(
-                        color: kLime,
-                        borderRadius: BorderRadius.circular(100),
-                        border: Border.all(color: kInk, width: 2.5),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: kInk,
-                            offset: Offset(4, 4),
-                            blurRadius: 0,
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        'PARTY READY',
-                        style: GoogleFonts.bowlbyOne(
-                          fontSize: 12,
-                          color: kInk,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-
-            // Floating Neo-Brutalist Sticker 3: Mini Star accent (mid-right)
-            AnimatedBuilder(
-              animation: _bobbingController,
-              builder: (context, child) {
-                final angle = _bobbingController.value * 2 * math.pi;
-                final offsetY = math.sin(angle + 1.5) * 6.0;
-                return Positioned(
-                  top: size.height * 0.44 + offsetY,
-                  right: 28,
-                  child: Transform.rotate(
-                    angle: 15 * math.pi / 180,
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: kCream,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: kInk, width: 2),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: kInk,
-                            offset: Offset(2, 2),
-                            blurRadius: 0,
-                          ),
-                        ],
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        '★',
-                        style: GoogleFonts.bowlbyOne(
-                          fontSize: 18,
-                          color: kInk,
-                          height: 1.0,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-
-            // Center Branding Section
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+              // 4. Main Foreground Layout
+              Padding(
+                padding: const EdgeInsets.fromLTRB(26, 24, 26, 32),
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    // "FOREHEAD CHARADES" Black Pill Badge
-                    Transform.rotate(
-                      angle: 2 * math.pi / 180,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: kInk,
-                          borderRadius: BorderRadius.circular(100),
-                          border: Border.all(color: kCream, width: 2),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x66000000),
-                              offset: Offset(3, 3),
-                              blurRadius: 0,
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          'FOREHEAD CHARADES',
-                          style: GoogleFonts.bowlbyOne(
-                            fontSize: 12,
-                            color: kYellow,
-                            letterSpacing: 1.4,
-                          ),
-                        ),
-                      ),
-                    ),
+                    const Spacer(flex: 3),
 
-                    const SizedBox(height: 12),
-
-                    // Tilted "Cipher!" Hero Title (fontSize: 68, 5px hard ink shadow)
-                    Transform.rotate(
-                      angle: -3.5 * math.pi / 180,
-                      child: Row(
+                    // Center Branding Stack
+                    Center(
+                      child: Column(
                         mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
                         children: [
-                          Text(
-                            'Cipher',
-                            style: GoogleFonts.bowlbyOne(
-                              fontSize: 68,
-                              height: 0.95,
-                              color: kCream,
-                              shadows: const [
-                                Shadow(
-                                  color: kInk,
-                                  offset: Offset(5, 5),
-                                  blurRadius: 0,
+                          _outlinedHeroTitle(),
+                          const SizedBox(height: 22),
+
+                          // Cream "FOREHEAD CHARADES" Rectangular Sticker
+                          Transform.rotate(
+                            angle: _rad(1.5),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 9),
+                              decoration: BoxDecoration(
+                                color: _kCream,
+                                border: Border.all(color: _kInk, width: 3),
+                                boxShadow: _hardShadow(4),
+                              ),
+                              child: Text(
+                                'FOREHEAD CHARADES',
+                                style: GoogleFonts.bowlbyOne(
+                                  fontSize: 14,
+                                  color: _kInk,
+                                  letterSpacing: 0.6,
                                 ),
-                              ],
+                              ),
                             ),
                           ),
-                          Text(
-                            '!',
-                            style: GoogleFonts.bowlbyOne(
-                              fontSize: 68,
-                              height: 0.95,
-                              color: kYellow,
-                              shadows: const [
-                                Shadow(
-                                  color: kInk,
-                                  offset: Offset(5, 5),
-                                  blurRadius: 0,
+                          const SizedBox(height: 14),
+
+                          // Yellow "ACT • GUESS • LAUGH" Rectangular Sticker
+                          Transform.rotate(
+                            angle: _rad(-1.8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 9),
+                              decoration: BoxDecoration(
+                                color: _kYellow,
+                                border: Border.all(color: _kInk, width: 3),
+                                boxShadow: _hardShadow(4),
+                              ),
+                              child: Text(
+                                'ACT • GUESS • LAUGH',
+                                style: GoogleFonts.bowlbyOne(
+                                  fontSize: 14,
+                                  color: _kInk,
+                                  letterSpacing: 0.6,
                                 ),
-                              ],
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const Spacer(flex: 4),
 
-                    // "ACT • GUESS • LAUGH" Yellow Sticker
-                    Transform.rotate(
-                      angle: 2.5 * math.pi / 180,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: kYellow,
-                          borderRadius: BorderRadius.circular(100),
-                          border: Border.all(color: kInk, width: 2.5),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: kInk,
-                              offset: Offset(3, 3),
-                              blurRadius: 0,
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          'ACT • GUESS • LAUGH',
-                          style: GoogleFonts.bowlbyOne(
-                            fontSize: 13,
-                            color: kInk,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Bottom Arcade Loading Bar Section
-            Positioned(
-              left: 24,
-              right: 24,
-              bottom: 40,
-              child: SafeArea(
-                top: false,
-                child: AnimatedBuilder(
-                  animation: Listenable.merge([
-                    _progressAnimation,
-                    _stripeController,
-                  ]),
-                  builder: (context, child) {
-                    final progress = _progressAnimation.value;
-                    // Live percentage readout starting from 12% -> 100%
-                    final displayPercent =
-                        (12 + (progress * 88)).clamp(12, 100).round();
-                    final tip = _currentTip(progress);
-
-                    return Column(
+                    // Bottom Subway Surfers Style Loading Bar
+                    Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Cycling Status Tip
-                        SizedBox(
-                          height: 24,
-                          child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 200),
-                            child: Text(
-                              tip,
-                              key: ValueKey<String>(tip),
-                              textAlign: TextAlign.center,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.dmSans(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: kCream,
-                              ),
+                        // Loading Tip
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 180),
+                          child: Text(
+                            _loadingTips[_tipIndex],
+                            key: ValueKey<int>(_tipIndex),
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: _kCream,
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 12),
 
-                        // Chunky Pill Progress Track (height: 32, kCream fill, 3px kInk border, 4px shadow)
+                        // Progress Track
                         Container(
-                          height: 32,
+                          height: 36,
+                          width: double.infinity,
                           decoration: BoxDecoration(
-                            color: kCream,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: kInk, width: 3),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: kInk,
-                                offset: Offset(0, 4),
-                                blurRadius: 0,
-                              ),
-                            ],
+                            color: _kCream,
+                            borderRadius: BorderRadius.circular(99),
+                            border: Border.all(color: _kInk, width: 3.5),
+                            boxShadow: _hardShadow(5),
                           ),
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(99),
                             child: LayoutBuilder(
                               builder: (context, constraints) {
-                                final totalWidth = constraints.maxWidth;
-                                final fillWidth = totalWidth * progress;
-
-                                return Stack(
-                                  children: [
-                                    // Animated kLime fill bar with candy diagonal stripes
-                                    if (fillWidth > 0)
-                                      Positioned(
-                                        left: 0,
-                                        top: 0,
-                                        bottom: 0,
-                                        width: fillWidth,
-                                        child: CustomPaint(
-                                          painter: _CandyStripePainter(
-                                            stripeShift: _stripeController.value,
-                                            baseColor: kLime,
-                                            stripeColor: const Color(0xFF9EDF00),
-                                          ),
-                                        ),
-                                      ),
-
-                                    // Live percentage readout (12% -> 100%) in Bowlby One
-                                    Center(
-                                      child: Text(
-                                        '$displayPercent%',
-                                        style: GoogleFonts.bowlbyOne(
-                                          fontSize: 14,
-                                          color: kInk,
-                                          letterSpacing: 0.5,
-                                        ),
+                                final fillWidth =
+                                    (constraints.maxWidth * _progress)
+                                        .clamp(0.0, constraints.maxWidth);
+                                return Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 220),
+                                    curve: Curves.easeOutCubic,
+                                    width: fillWidth,
+                                    height: double.infinity,
+                                    decoration: const BoxDecoration(
+                                      color: _kLime,
+                                      border: Border(
+                                        right: BorderSide(
+                                            color: _kInk, width: 3.5),
                                       ),
                                     ),
-                                  ],
+                                    child: CustomPaint(
+                                      painter: _CandyStripePainter(),
+                                    ),
+                                  ),
                                 );
                               },
                             ),
                           ),
                         ),
+                        const SizedBox(height: 14),
+
+                        // Outlined 92% Counter
+                        Stack(
+                          children: [
+                            Transform.translate(
+                              offset: const Offset(3, 3),
+                              child: Text(
+                                '$percent%',
+                                style: GoogleFonts.bowlbyOne(
+                                  fontSize: 28,
+                                  color: _kInk,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              '$percent%',
+                              style: GoogleFonts.bowlbyOne(
+                                fontSize: 28,
+                                foreground: Paint()
+                                  ..style = PaintingStyle.stroke
+                                  ..strokeWidth = 4
+                                  ..color = _kInk,
+                              ),
+                            ),
+                            Text(
+                              '$percent%',
+                              style: GoogleFonts.bowlbyOne(
+                                fontSize: 28,
+                                color: _kCream,
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
-                    );
-                  },
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// Custom painter rendering angled diagonal candy/arcade stripes
 class _CandyStripePainter extends CustomPainter {
-  final double stripeShift;
-  final Color baseColor;
-  final Color stripeColor;
-
-  _CandyStripePainter({
-    required this.stripeShift,
-    required this.baseColor,
-    required this.stripeColor,
-  });
-
   @override
   void paint(Canvas canvas, Size size) {
-    if (size.width <= 0 || size.height <= 0) return;
+    final paint = Paint()
+      ..color = const Color(0xFF98CC00)
+      ..strokeWidth = 12
+      ..style = PaintingStyle.stroke;
 
-    // 1. Paint solid base color
-    final basePaint = Paint()
-      ..color = baseColor
-      ..style = PaintingStyle.fill;
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), basePaint);
-
-    // 2. Paint angled diagonal stripes
-    final stripePaint = Paint()
-      ..color = stripeColor
-      ..style = PaintingStyle.fill;
-
-    const stripeWidth = 12.0;
-    const stripeGap = 12.0;
-    const step = stripeWidth + stripeGap;
-
-    final shift = (stripeShift * step) % step;
-
-    canvas.save();
-    canvas.clipRect(Rect.fromLTWH(0, 0, size.width, size.height));
-
-    for (double x = -size.height - step + shift;
-        x < size.width + step;
-        x += step) {
-      final path = Path()
-        ..moveTo(x, size.height)
-        ..lineTo(x + stripeWidth, size.height)
-        ..lineTo(x + stripeWidth + size.height, 0)
-        ..lineTo(x + size.height, 0)
-        ..close();
-      canvas.drawPath(path, stripePaint);
+    const double step = 28;
+    for (double x = -size.height; x < size.width + size.height; x += step) {
+      canvas.drawLine(
+        Offset(x, size.height),
+        Offset(x + size.height, 0),
+        paint,
+      );
     }
-
-    canvas.restore();
   }
 
   @override
-  bool shouldRepaint(covariant _CandyStripePainter oldDelegate) {
-    return oldDelegate.stripeShift != stripeShift ||
-        oldDelegate.baseColor != baseColor ||
-        oldDelegate.stripeColor != stripeColor;
-  }
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-

@@ -9,6 +9,6 @@ void main() {
 
   testWidgets('App renders without crashing', (WidgetTester tester) async {
     await tester.pumpWidget(const CipherApp());
-    expect(find.text('Cipher'), findsOneWidget);
+    expect(find.textContaining('Cipher'), findsWidgets);
   });
 }

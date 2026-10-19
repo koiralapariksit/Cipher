@@ -19,22 +19,21 @@ void main() {
       ),
     );
 
-    // Initial branding and badge verification
-    expect(find.text('Cipher'), findsOneWidget);
-    expect(find.text('!'), findsOneWidget);
+    // Initial branding and badge verification (triple-stacked neo-brutalist outlined text)
+    expect(find.text('Cipher!'), findsNWidgets(3));
     expect(find.text('FOREHEAD CHARADES'), findsOneWidget);
     expect(find.text('ACT • GUESS • LAUGH'), findsOneWidget);
     expect(find.text('PARTY READY'), findsOneWidget);
     expect(find.text('Warming up the party decks...'), findsOneWidget);
-    expect(find.text('12%'), findsOneWidget);
+    expect(find.text('8%'), findsNWidgets(3));
 
-    // Pump intermediate frames to advance progress and tips
-    await tester.pump(const Duration(milliseconds: 900));
+    // Advance periodic progress timer steps
+    await tester.pump(const Duration(milliseconds: 750));
     expect(find.byType(SplashScreen), findsOneWidget);
 
-    // Pump to completion and transition to HomeScreen
-    await tester.pump(const Duration(milliseconds: 2600));
-    // Pump transition fade frames
+    // Advance to 100% completion and trigger navigation
+    await tester.pump(const Duration(milliseconds: 2500));
+    // Advance transition fade frames
     await tester.pump(const Duration(milliseconds: 400));
 
     // Verify transition to HomeScreen
