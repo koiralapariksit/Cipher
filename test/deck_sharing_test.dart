@@ -196,5 +196,35 @@ void main() {
       expect(sorted[5].id, 'movies_tv');
     });
   });
+
+  group('StorageService Invert Tilt Default & Long Title Deck Handling', () {
+    test('fresh StorageService initializes invertTilt to true', () async {
+      SharedPreferences.setMockInitialValues({});
+      final storage = StorageService();
+      await storage.init(force: true);
+
+      expect(storage.settings.invertTilt, isTrue);
+    });
+
+    test('custom deck with very long title stores and retrieves properly', () async {
+      SharedPreferences.setMockInitialValues({});
+      final storage = StorageService();
+      await storage.init(force: true);
+
+      const longTitleDeck = Deck(
+        id: 'custom_long_title',
+        name: '60s-90s POPULAR SONGS - MJ, QUEEN, BEATLES, MADONNA, ELTON JOHN',
+        emoji: '',
+        colorValue: 0xFF2F5BFF,
+        category: 'Pop Culture',
+        isCustom: true,
+        items: ['Thriller', 'Bohemian Rhapsody', 'Hey Jude', 'Like a Prayer'],
+      );
+
+      await storage.saveCustomDeck(longTitleDeck);
+      final retrieved = storage.customDecks.firstWhere((d) => d.id == 'custom_long_title');
+      expect(retrieved.name, contains('60s-90s POPULAR SONGS'));
+    });
+  });
 }
 

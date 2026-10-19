@@ -154,21 +154,21 @@ void main() {
   });
 
   group('AppSettings invertTilt Storage Verification', () {
-    test('Default fallback is invertTilt = false', () {
+    test('Default fallback is invertTilt = true', () {
       const settings = AppSettings();
-      expect(settings.invertTilt, isFalse);
+      expect(settings.invertTilt, isTrue);
     });
 
     test('Serializes and deserializes invertTilt correctly', () {
-      const original = AppSettings(invertTilt: true);
+      const original = AppSettings(invertTilt: false);
       final jsonStr = original.toJson();
       final parsed = AppSettings.fromJson(jsonStr);
 
-      expect(parsed.invertTilt, isTrue);
+      expect(parsed.invertTilt, isFalse);
 
       final mapWithoutField = <String, dynamic>{};
       final fallback = AppSettings.fromMap(mapWithoutField);
-      expect(fallback.invertTilt, isFalse);
+      expect(fallback.invertTilt, isTrue);
     });
   });
 }

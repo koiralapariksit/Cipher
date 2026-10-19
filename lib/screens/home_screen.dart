@@ -1039,54 +1039,65 @@ class _DeckStickerCard extends StatelessWidget {
               // Top row: pill count + pin badge + edit + favorite star
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: kInk,
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                    child: Text(
-                      '${deck.items.length} cards',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: kCream,
-                      ),
-                    ),
-                  ),
-                  if (isPinned) ...[
-                    const SizedBox(width: 5),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: kYellow,
-                        borderRadius: BorderRadius.circular(99),
-                        border: Border.all(color: kInk, width: 1.5),
-                        boxShadow: kSmallShadow,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.push_pin_rounded,
-                              size: 11, color: kInk),
-                          const SizedBox(width: 2),
-                          Text(
-                            'PIN',
-                            style: GoogleFonts.bowlbyOne(
-                              fontSize: 9,
+                  Flexible(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
                               color: kInk,
+                              borderRadius: BorderRadius.circular(99),
+                            ),
+                            child: Text(
+                              '${deck.items.length} cards',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.dmSans(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: kCream,
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (isPinned) ...[
+                          const SizedBox(width: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: kYellow,
+                              borderRadius: BorderRadius.circular(99),
+                              border: Border.all(color: kInk, width: 1.5),
+                              boxShadow: kSmallShadow,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.push_pin_rounded,
+                                    size: 10, color: kInk),
+                                const SizedBox(width: 2),
+                                Text(
+                                  'PIN',
+                                  style: GoogleFonts.bowlbyOne(
+                                    fontSize: 9,
+                                    color: kInk,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                   const Spacer(),
                   if (onEdit != null)
                     GestureDetector(
@@ -1121,7 +1132,7 @@ class _DeckStickerCard extends StatelessWidget {
                         isFavorite
                             ? Icons.star_rounded
                             : Icons.star_outline_rounded,
-                        size: 22,
+                        size: 20,
                         color: kInk,
                       ),
                     ),
@@ -1129,32 +1140,41 @@ class _DeckStickerCard extends StatelessWidget {
                 ],
               ),
 
-              const Spacer(),
+              const SizedBox(height: 6),
 
-              // Best score if recorded
-              if (highScore > 0)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
-                  child: Text(
-                    'BEST $highScore',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      color: kInk.withValues(alpha: 0.7),
-                      letterSpacing: 0.5,
-                    ),
+              // Best score & Deck Title (strict kInk contrast, bounded with maxLines: 2)
+              Expanded(
+                child: Align(
+                  alignment: Alignment.bottomLeft,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (highScore > 0)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 2),
+                          child: Text(
+                            'BEST $highScore',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: kInk.withValues(alpha: 0.7),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      Text(
+                        deck.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.bowlbyOne(
+                          fontSize: deck.name.length > 18 ? 17 : 21,
+                          color: kInk,
+                          height: 1.05,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-
-              // Deck Title in Bowlby One (strict kInk contrast)
-              Text(
-                deck.name,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.bowlbyOne(
-                  fontSize: deck.name.length > 20 ? 19 : 22,
-                  color: kInk,
-                  height: 1.05,
                 ),
               ),
             ],

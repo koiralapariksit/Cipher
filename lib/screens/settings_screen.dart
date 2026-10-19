@@ -127,8 +127,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           _buildSwitchTile(
                             title: 'Invert Tilt Controls',
                             subtitle: _settings.invertTilt
-                                ? 'Inverted: Tilt UP = Pass, Tilt DOWN = Correct'
-                                : 'Default: Tilt DOWN = Pass, Tilt UP = Correct',
+                                ? 'Active (Default): Tilt UP = Pass, Tilt DOWN = Correct'
+                                : 'Standard: Tilt DOWN = Pass, Tilt UP = Correct',
                             icon: Icons.swap_vert_rounded,
                             iconColor: kOrange,
                             value: _settings.invertTilt,

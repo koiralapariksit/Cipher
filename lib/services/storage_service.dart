@@ -11,7 +11,7 @@ class AppSettings {
   final int defaultTimerDuration; // 30, 60, 90
   final double tiltSensitivity; // 1.0 (normal)
   final bool showManualButtons; // Always show on-screen buttons
-  final bool invertTilt; // Default false: Down = Correct, Up = Pass
+  final bool invertTilt; // Default true: Up = Pass, Down = Correct (Inverted)
 
   const AppSettings({
     this.soundEnabled = true,
@@ -19,7 +19,7 @@ class AppSettings {
     this.defaultTimerDuration = 60,
     this.tiltSensitivity = 1.0,
     this.showManualButtons = true,
-    this.invertTilt = false,
+    this.invertTilt = true,
   });
 
   AppSettings copyWith({
@@ -61,7 +61,7 @@ class AppSettings {
           (map['tiltSensitivity'] as num?)?.toDouble() ?? 1.0,
       showManualButtons:
           map['showManualButtons'] as bool? ?? map['forceManualButtons'] as bool? ?? true,
-      invertTilt: map['invertTilt'] as bool? ?? false,
+      invertTilt: map['invertTilt'] as bool? ?? true,
     );
   }
 
