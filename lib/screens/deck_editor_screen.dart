@@ -1,10 +1,12 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/deck.dart';
 import '../services/storage_service.dart';
-import '../theme/app_theme.dart';
+import '../theme/deck_colors.dart';
 
-/// Screen for creating or editing custom card decks.
+/// Screen for creating or editing custom card decks — 100% Neo-Brutalist.
 class DeckEditorScreen extends StatefulWidget {
   final Deck? deck; // null if creating a new deck
 
@@ -50,14 +52,14 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
   ];
 
   static const List<int> _colorOptions = [
-    0xFFEDEDED, // Off-white / Silver
-    0xFFC8A45C, // Metallic Gold
-    0xFFB38F4D, // Warm Bronze
-    0xFFD47A45, // Cognac Amber
-    0xFF4E9F6E, // Luxury Emerald
-    0xFF7A8691, // Muted Slate Stone
-    0xFFA65B32, // Deep Terracotta
-    0xFF6B8267, // Muted Olive
+    0xFFFF7A1A, // Orange
+    0xFFFF3D8B, // Pink
+    0xFFC9B6FF, // Lavender
+    0xFFFFD60A, // Yellow
+    0xFF1FE08F, // Mint
+    0xFF2F5BFF, // Blue
+    0xFFB8F400, // Lime
+    0xFF8E8E93, // Slate
   ];
 
   static const List<String> _categoryOptions = [
@@ -138,42 +140,46 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: appBgMid,
+        backgroundColor: kInk,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(appRadius),
-          side: const BorderSide(color: appLine, width: 0.8),
+          borderRadius: kAsymmetricRadius,
+          side: const BorderSide(color: kCream, width: 3.5),
         ),
         title: Text(
           'Edit Card Word',
-          style: appFont(18, weight: FontWeight.w600, color: appText),
+          style: GoogleFonts.bowlbyOne(fontSize: 20, color: kYellow),
         ),
         content: Container(
           decoration: BoxDecoration(
-            color: appField,
-            borderRadius: BorderRadius.circular(appRadius),
-            border: Border.all(color: appLine, width: 0.8),
+            color: kCream,
+            borderRadius: BorderRadius.circular(99),
+            border: Border.all(color: kInk, width: 2.0),
+            boxShadow: kSmallShadow,
           ),
           child: TextField(
             controller: controller,
             autofocus: true,
             enableSuggestions: false,
             autocorrect: false,
-            style: appFont(15, color: appText),
-            cursorColor: appText,
+            style: GoogleFonts.dmSans(
+                fontSize: 16, fontWeight: FontWeight.w700, color: kInk),
+            cursorColor: kInk,
             decoration: InputDecoration(
               hintText: 'Enter word',
-              hintStyle: appFont(14, color: appTextDim),
+              hintStyle: GoogleFonts.dmSans(fontSize: 14, color: kInkDim),
               border: InputBorder.none,
               contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             ),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('CANCEL',
-                style: appFont(13, color: appTextDim, spacing: 0.5)),
+            child: Text(
+              'CANCEL',
+              style: GoogleFonts.bowlbyOne(fontSize: 13, color: kCream),
+            ),
           ),
           GestureDetector(
             onTap: () {
@@ -186,13 +192,14 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: appText,
-                borderRadius: BorderRadius.circular(appRadius),
+                color: kLime,
+                borderRadius: BorderRadius.circular(99),
+                border: Border.all(color: kInk, width: 2.0),
+                boxShadow: kSmallShadow,
               ),
               child: Text(
                 'SAVE',
-                style: appFont(13,
-                    weight: FontWeight.w600, color: appBgBottom, spacing: 0.5),
+                style: GoogleFonts.bowlbyOne(fontSize: 13, color: kInk),
               ),
             ),
           ),
@@ -205,24 +212,31 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: appBgMid,
+        backgroundColor: kInk,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(appRadius),
-          side: const BorderSide(color: appLine, width: 0.8),
+          borderRadius: kAsymmetricRadius,
+          side: const BorderSide(color: kCream, width: 3.5),
         ),
         title: Text(
           'Delete Deck?',
-          style: appFont(18, weight: FontWeight.w600, color: appPass),
+          style: GoogleFonts.bowlbyOne(fontSize: 22, color: kPink),
         ),
         content: Text(
           'Are you sure you want to delete "${widget.deck!.name}"? This action cannot be undone.',
-          style: appFont(14, color: appTextDim, height: 1.4),
+          style: GoogleFonts.dmSans(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: kCream,
+            height: 1.4,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('CANCEL',
-                style: appFont(13, color: appTextDim, spacing: 0.5)),
+            child: Text(
+              'CANCEL',
+              style: GoogleFonts.bowlbyOne(fontSize: 13, color: kCream),
+            ),
           ),
           GestureDetector(
             onTap: () async {
@@ -234,14 +248,14 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: appPass.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(appRadius),
-                border: Border.all(color: appPass, width: 0.8),
+                color: kPink,
+                borderRadius: BorderRadius.circular(99),
+                border: Border.all(color: kInk, width: 2.0),
+                boxShadow: kSmallShadow,
               ),
               child: Text(
                 'DELETE',
-                style: appFont(13,
-                    weight: FontWeight.w600, color: appPass, spacing: 0.5),
+                style: GoogleFonts.bowlbyOne(fontSize: 13, color: kInk),
               ),
             ),
           ),
@@ -278,13 +292,20 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
   void _showSnack(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg, style: appFont(14, color: appText)),
+        content: Text(
+          msg,
+          style: GoogleFonts.dmSans(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: kInk,
+          ),
+        ),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(appRadius),
-          side: const BorderSide(color: appLine, width: 0.8),
+          borderRadius: BorderRadius.circular(99),
+          side: const BorderSide(color: kInk, width: 2.0),
         ),
-        backgroundColor: appBgMid,
+        backgroundColor: kYellow,
       ),
     );
   }
@@ -296,342 +317,462 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: appBgBottom,
-        body: Container(
-          decoration: appBackgroundDecoration,
-          child: SafeArea(
-            child: Column(
-              children: [
-                // Top Bar
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                  child: Row(
-                    children: [
-                      AppIconButton(
-                        icon: Icons.arrow_back_rounded,
-                        tooltip: 'Back',
-                        size: 40,
-                        onTap: () => Navigator.pop(context),
-                      ),
-                      const SizedBox(width: 14),
-                      Text(
-                        isEditing ? 'Edit Deck' : 'Create Deck',
-                        style: appFont(24,
-                            weight: FontWeight.w700, spacing: -0.6),
-                      ),
-                      const Spacer(),
-                      if (isEditing) ...[
-                        AppIconButton(
-                          icon: Icons.delete_outline_rounded,
-                          tooltip: 'Delete Deck',
-                          iconColor: appPass,
-                          size: 40,
-                          onTap: _deleteDeckConfirm,
+        backgroundColor: kBlue,
+        body: SafeArea(
+          child: Column(
+            children: [
+              // ── Custom Neo-Brutalist Header ──
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: kInk,
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(color: kInk, width: 2.0),
+                          boxShadow: kSmallShadow,
                         ),
-                        const SizedBox(width: 8),
-                      ],
-                      GestureDetector(
-                        onTap: _saveDeck,
-                        child: Container(
-                          height: 40,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: appText,
-                            borderRadius: BorderRadius.circular(appRadius),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            'Save',
-                            style: appFont(14,
-                                weight: FontWeight.w600,
-                                color: appBgBottom),
+                        child: Text(
+                          '✕ BACK',
+                          style: GoogleFonts.bowlbyOne(
+                            fontSize: 13,
+                            color: kCream,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                // Form body
-                Expanded(
-                  child: Form(
-                    key: _formKey,
-                    child: ListView(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 10),
-                      children: [
-                        // Preview Card
-                        _buildPreviewHeader(),
-                        const SizedBox(height: 18),
-
-                        // Deck Name Input
-                        const AppSectionHeader(title: 'Deck Title'),
-                        const SizedBox(height: 10),
-                        Container(
-                          height: 46,
-                          decoration: BoxDecoration(
-                            color: appField,
-                            borderRadius: BorderRadius.circular(appRadius),
-                            border: Border.all(color: appLine, width: 0.8),
-                          ),
-                          child: TextFormField(
-                            controller: _nameController,
-                            enableSuggestions: false,
-                            autocorrect: false,
-                            style: appFont(15, color: appText),
-                            cursorColor: appText,
-                            decoration: InputDecoration(
-                              hintText: 'e.g. 90s Nostalgia, World History...',
-                              hintStyle: appFont(15, color: appTextDim),
-                              prefixIcon: const Icon(Icons.edit_note_rounded,
-                                  color: appTextDim, size: 20),
-                              border: InputBorder.none,
-                              contentPadding:
-                                  const EdgeInsets.symmetric(vertical: 13),
-                            ),
-                            validator: (val) {
-                              if (val == null || val.trim().isEmpty) {
-                                return 'Please enter a deck name.';
-                              }
-                              return null;
-                            },
-                            onChanged: (_) => setState(() {}),
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-                        _buildCategorySelector(),
-                        const SizedBox(height: 20),
-                        _buildDeckIconPicker(),
-                        const SizedBox(height: 20),
-                        _buildColorPicker(),
-                        const SizedBox(height: 24),
-
-                        // Cards List Section Header
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    ),
+                    const SizedBox(width: 12),
+                    Transform.rotate(
+                      angle: -2 * math.pi / 180,
+                      child: RichText(
+                        text: TextSpan(
                           children: [
-                            Row(
-                              children: [
-                                Text(
-                                  'CARDS',
-                                  style: appFont(11,
-                                      weight: FontWeight.w600,
-                                      spacing: 1.2,
-                                      color: appTextDim),
+                            TextSpan(
+                              text: isEditing ? 'Edit Deck' : 'New Deck',
+                              style: GoogleFonts.bowlbyOne(
+                                fontSize: 30,
+                                color: kCream,
+                                height: 0.95,
+                              ),
+                            ),
+                            TextSpan(
+                              text: '!',
+                              style: GoogleFonts.bowlbyOne(
+                                fontSize: 30,
+                                color: kYellow,
+                                height: 0.95,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    if (isEditing) ...[
+                      GestureDetector(
+                        onTap: _deleteDeckConfirm,
+                        child: Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: kPink,
+                            borderRadius: BorderRadius.circular(99),
+                            border: Border.all(color: kInk, width: 2.0),
+                            boxShadow: kSmallShadow,
+                          ),
+                          child: const Icon(Icons.delete_outline_rounded,
+                              size: 20, color: kInk),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    GestureDetector(
+                      onTap: _saveDeck,
+                      child: Container(
+                        height: 38,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: kLime,
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(color: kInk, width: 2.0),
+                          boxShadow: kSmallShadow,
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          'SAVE',
+                          style: GoogleFonts.bowlbyOne(
+                            fontSize: 13,
+                            color: kInk,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── Form Body ──
+              Expanded(
+                child: Form(
+                  key: _formKey,
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 10),
+                    children: [
+                      // Preview Card
+                      _buildPreviewHeader(),
+                      const SizedBox(height: 18),
+
+                      // Deck Name Input
+                      _buildSectionHeader('DECK TITLE', kYellow),
+                      const SizedBox(height: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: kCream,
+                          borderRadius: kAsymmetricRadius,
+                          border: Border.all(color: kInk, width: 2.5),
+                          boxShadow: kHardShadow,
+                        ),
+                        child: TextFormField(
+                          controller: _nameController,
+                          enableSuggestions: false,
+                          autocorrect: false,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: kInk,
+                          ),
+                          cursorColor: kInk,
+                          decoration: InputDecoration(
+                            hintText: 'e.g. 90s Nostalgia, World History...',
+                            hintStyle: GoogleFonts.dmSans(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: kInkDim,
+                            ),
+                            prefixIcon: const Icon(Icons.edit_note_rounded,
+                                color: kInk, size: 24),
+                            border: InputBorder.none,
+                            contentPadding:
+                                const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) {
+                              return 'Please enter a deck name.';
+                            }
+                            return null;
+                          },
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+                      _buildCategorySelector(),
+                      const SizedBox(height: 20),
+                      _buildDeckIconPicker(),
+                      const SizedBox(height: 20),
+                      _buildColorPicker(),
+                      const SizedBox(height: 24),
+
+                      // Cards List Section Header
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              _buildSectionHeader('CARDS', kLime),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: _words.length >= 5 ? kLime : kOrange,
+                                  borderRadius: BorderRadius.circular(99),
+                                  border: Border.all(color: kInk, width: 2.0),
+                                  boxShadow: kSmallShadow,
                                 ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: appField,
-                                    borderRadius:
-                                        BorderRadius.circular(appRadius),
-                                    border: Border.all(
-                                      color: _words.length >= 5
-                                          ? appCorrect.withValues(alpha: 0.5)
-                                          : appPass.withValues(alpha: 0.5),
-                                      width: 0.8,
-                                    ),
+                                child: Text(
+                                  _words.length >= 5
+                                      ? '${_words.length} cards'
+                                      : '${_words.length}/5 minimum',
+                                  style: GoogleFonts.bowlbyOne(
+                                    fontSize: 11,
+                                    color: kInk,
                                   ),
-                                  child: Text(
-                                    _words.length >= 5
-                                        ? '${_words.length} cards'
-                                        : '${_words.length}/5 minimum',
-                                    style: appFont(
-                                      11,
-                                      weight: FontWeight.w600,
-                                      color: _words.length >= 5
-                                          ? appCorrect
-                                          : appPass,
-                                    ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (_words.isNotEmpty)
+                            GestureDetector(
+                              onTap: () => setState(() => _words.clear()),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: kPink,
+                                  borderRadius: BorderRadius.circular(99),
+                                  border: Border.all(color: kInk, width: 1.5),
+                                ),
+                                child: Text(
+                                  'Clear all',
+                                  style: GoogleFonts.bowlbyOne(
+                                    fontSize: 11,
+                                    color: kInk,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      if (_words.isEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 36),
+                          decoration: BoxDecoration(
+                            color: kCream,
+                            borderRadius: kAsymmetricRadius,
+                            border: Border.all(color: kInk, width: 3.0),
+                            boxShadow: kCardShadow,
+                          ),
+                          child: Center(
+                            child: Column(
+                              children: [
+                                const Icon(Icons.add_circle_outline_rounded,
+                                    color: kInk, size: 36),
+                                const SizedBox(height: 10),
+                                Text(
+                                  'No cards yet.\nType or paste words below to begin.',
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: kInkDim,
+                                    height: 1.4,
                                   ),
                                 ),
                               ],
                             ),
-                            if (_words.isNotEmpty)
-                              GestureDetector(
-                                onTap: () => setState(() => _words.clear()),
-                                child: Text(
-                                  'Clear all',
-                                  style: appFont(12,
-                                      weight: FontWeight.w600,
-                                      color: appTextDim),
-                                ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Container(height: 0.8, color: appLine),
-                        const SizedBox(height: 12),
-
-                        if (_words.isEmpty)
-                          Container(
-                            padding: const EdgeInsets.symmetric(vertical: 36),
-                            decoration: BoxDecoration(
-                              color: appTile,
-                              borderRadius: BorderRadius.circular(appRadius),
-                              border: Border.all(color: appLine, width: 0.8),
-                            ),
-                            child: Center(
-                              child: Column(
-                                children: [
-                                  const Icon(Icons.add_circle_outline_rounded,
-                                      color: appTextDim, size: 32),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    'No cards yet.\nType or paste words below to begin.',
-                                    textAlign: TextAlign.center,
-                                    style: appFont(13,
-                                        color: appTextDim, height: 1.4),
+                          ),
+                        )
+                      else
+                        Container(
+                          decoration: BoxDecoration(
+                            color: kCream,
+                            borderRadius: kAsymmetricRadius,
+                            border: Border.all(color: kInk, width: 3.0),
+                            boxShadow: kCardShadow,
+                          ),
+                          child: ClipRRect(
+                            borderRadius: kAsymmetricRadius,
+                            child: ListView.separated(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 10),
+                              itemCount: _words.length,
+                              separatorBuilder: (_, _) => const SizedBox(height: 6),
+                              itemBuilder: (ctx, index) {
+                                final word = _words[index];
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: kAsymmetricSmallRadius,
+                                    border: Border.all(color: kInk, width: 2.0),
+                                    boxShadow: kSmallShadow,
                                   ),
-                                ],
-                              ),
-                            ),
-                          )
-                        else
-                          Container(
-                            decoration: BoxDecoration(
-                              color: appTile,
-                              borderRadius: BorderRadius.circular(appRadius),
-                              border: Border.all(color: appLine, width: 0.8),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(appRadius),
-                              child: ListView.separated(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: _words.length,
-                                separatorBuilder: (_, _) => const Divider(
-                                  height: 1,
-                                  color: appLine,
-                                ),
-                                itemBuilder: (ctx, index) {
-                                  final word = _words[index];
-                                  return ListTile(
-                                    dense: true,
-                                    contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 14, vertical: 2),
-                                    leading: Container(
-                                      width: 26,
-                                      height: 26,
-                                      decoration: BoxDecoration(
-                                        borderRadius:
-                                            BorderRadius.circular(appRadius),
-                                        color: appField,
-                                        border: Border.all(
-                                            color: appLine, width: 0.8),
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        '${index + 1}',
-                                        style: appFont(
-                                          11,
-                                          weight: FontWeight.w600,
-                                          color: appTextDim,
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 26,
+                                        height: 26,
+                                        decoration: BoxDecoration(
+                                          borderRadius:
+                                              BorderRadius.circular(99),
+                                          color: kYellow,
+                                          border: Border.all(
+                                              color: kInk, width: 1.5),
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          '${index + 1}',
+                                          style: GoogleFonts.bowlbyOne(
+                                            fontSize: 10,
+                                            color: kInk,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    title: Text(
-                                      word,
-                                      style: appFont(15,
-                                          weight: FontWeight.w500,
-                                          color: appText),
-                                    ),
-                                    trailing: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        IconButton(
-                                          icon: const Icon(Icons.edit_outlined,
-                                              size: 18, color: appTextDim),
-                                          onPressed: () => _editWord(index),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          word,
+                                          style: GoogleFonts.dmSans(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700,
+                                            color: kInk,
+                                          ),
                                         ),
-                                        IconButton(
-                                          icon: const Icon(Icons.close_rounded,
-                                              size: 18, color: appTextDim),
-                                          onPressed: () {
-                                            setState(
-                                                () => _words.removeAt(index));
-                                          },
+                                      ),
+                                      GestureDetector(
+                                        onTap: () => _editWord(index),
+                                        child: Container(
+                                          width: 28,
+                                          height: 28,
+                                          decoration: BoxDecoration(
+                                            color: kYellow,
+                                            borderRadius:
+                                                BorderRadius.circular(99),
+                                            border: Border.all(
+                                                color: kInk, width: 1.5),
+                                          ),
+                                          child: const Icon(
+                                              Icons.edit_outlined,
+                                              size: 15,
+                                              color: kInk),
                                         ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                        const SizedBox(height: 24),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Bottom Input Bar for Single or Bulk Words
-                Container(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                  decoration: const BoxDecoration(
-                    color: appBgMid,
-                    border: Border(
-                      top: BorderSide(color: appLine, width: 0.8),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          height: 46,
-                          decoration: BoxDecoration(
-                            color: appField,
-                            borderRadius: BorderRadius.circular(appRadius),
-                            border: Border.all(color: appLine, width: 0.8),
-                          ),
-                          child: TextField(
-                            controller: _wordInputController,
-                            enableSuggestions: false,
-                            autocorrect: false,
-                            style: appFont(14, color: appText),
-                            cursorColor: appText,
-                            textInputAction: TextInputAction.done,
-                            onSubmitted: (_) => _addWordsFromInput(),
-                            decoration: InputDecoration(
-                              hintText:
-                                  'Add word or paste list (comma / newline)...',
-                              hintStyle: appFont(13, color: appTextDim),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 13),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      GestureDetector(
+                                        onTap: () {
+                                          setState(
+                                              () => _words.removeAt(index));
+                                        },
+                                        child: Container(
+                                          width: 28,
+                                          height: 28,
+                                          decoration: BoxDecoration(
+                                            color: kPink,
+                                            borderRadius:
+                                                BorderRadius.circular(99),
+                                            border: Border.all(
+                                                color: kInk, width: 1.5),
+                                          ),
+                                          child: const Icon(
+                                              Icons.close_rounded,
+                                              size: 15,
+                                              color: kInk),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      GestureDetector(
-                        onTap: _addWordsFromInput,
-                        child: Container(
-                          height: 46,
-                          padding: const EdgeInsets.symmetric(horizontal: 18),
-                          decoration: BoxDecoration(
-                            color: appText,
-                            borderRadius: BorderRadius.circular(appRadius),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            'Add',
-                            style: appFont(14,
-                                weight: FontWeight.w600,
-                                color: appBgBottom),
-                          ),
-                        ),
-                      ),
+                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
-              ],
-            ),
+              ),
+
+              // ── Bottom Input Bar for Single or Bulk Words ──
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                decoration: const BoxDecoration(
+                  color: kCream,
+                  border: Border(
+                    top: BorderSide(color: kInk, width: 3.0),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(color: kInk, width: 2.0),
+                          boxShadow: kSmallShadow,
+                        ),
+                        child: TextField(
+                          controller: _wordInputController,
+                          enableSuggestions: false,
+                          autocorrect: false,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: kInk,
+                          ),
+                          cursorColor: kInk,
+                          textInputAction: TextInputAction.done,
+                          onSubmitted: (_) => _addWordsFromInput(),
+                          decoration: InputDecoration(
+                            hintText:
+                                'Add word or paste list (comma / newline)...',
+                            hintStyle: GoogleFonts.dmSans(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: kInkDim,
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 14),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    GestureDetector(
+                      onTap: _addWordsFromInput,
+                      child: Container(
+                        height: 48,
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        decoration: BoxDecoration(
+                          color: kYellow,
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(color: kInk, width: 2.0),
+                          boxShadow: kSmallShadow,
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          'ADD',
+                          style: GoogleFonts.bowlbyOne(
+                            fontSize: 13,
+                            color: kInk,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, Color badgeColor) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: badgeColor,
+          borderRadius: BorderRadius.circular(99),
+          border: Border.all(color: kInk, width: 2.0),
+          boxShadow: kSmallShadow,
+        ),
+        child: Text(
+          title,
+          style: GoogleFonts.bowlbyOne(
+            fontSize: 12,
+            color: kInk,
+            letterSpacing: 0.5,
           ),
         ),
       ),
@@ -651,28 +792,27 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: appTile,
-        borderRadius: BorderRadius.circular(appRadius),
-        border: Border.all(color: appLine, width: 0.8),
+        color: kCream,
+        borderRadius: kAsymmetricRadius,
+        border: Border.all(color: kInk, width: 3.0),
+        boxShadow: kCardShadow,
       ),
       child: Row(
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 52,
+            height: 52,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(appRadius),
-              color: appField,
-              border: Border.all(
-                color: Color(_selectedColor).withValues(alpha: 0.8),
-                width: 1.0,
-              ),
+              borderRadius: BorderRadius.circular(99),
+              color: Color(_selectedColor),
+              border: Border.all(color: kInk, width: 2.5),
+              boxShadow: kSmallShadow,
             ),
             child: Icon(
               selectedIcon,
-              size: 24,
-              color: Color(_selectedColor),
+              size: 26,
+              color: kInk,
             ),
           ),
           const SizedBox(width: 14),
@@ -684,14 +824,19 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
                   name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: appFont(18,
-                      weight: FontWeight.w600, color: appText, spacing: -0.2),
+                  style: GoogleFonts.bowlbyOne(
+                    fontSize: 18,
+                    color: kInk,
+                  ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   '$_selectedCategory • ${_words.length} cards',
-                  style: appFont(12,
-                      weight: FontWeight.w500, color: appTextDim),
+                  style: GoogleFonts.dmSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: kInkDim,
+                  ),
                 ),
               ],
             ),
@@ -705,7 +850,7 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const AppSectionHeader(title: 'Category / Genre'),
+        _buildSectionHeader('CATEGORY / GENRE', kLavender),
         const SizedBox(height: 10),
         Wrap(
           spacing: 8,
@@ -716,21 +861,25 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
               onTap: () => setState(() => _selectedCategory = cat),
               child: Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                 decoration: BoxDecoration(
-                  color: isSelected ? appText : appTile,
-                  borderRadius: BorderRadius.circular(appRadius),
-                  border: isSelected
-                      ? null
-                      : Border.all(color: appLine, width: 0.8),
+                  color: isSelected ? kYellow : kCream,
+                  borderRadius: BorderRadius.circular(99),
+                  border: Border.all(color: kInk, width: 2.0),
+                  boxShadow: isSelected ? kSmallShadow : null,
                 ),
                 child: Text(
                   cat,
-                  style: appFont(
-                    13,
-                    weight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                    color: isSelected ? appBgBottom : appTextDim,
-                  ),
+                  style: isSelected
+                      ? GoogleFonts.bowlbyOne(
+                          fontSize: 12,
+                          color: kInk,
+                        )
+                      : GoogleFonts.dmSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: kInk,
+                        ),
                 ),
               ),
             );
@@ -744,10 +893,10 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const AppSectionHeader(title: 'Deck Icon Badge'),
+        _buildSectionHeader('DECK ICON BADGE', kMint),
         const SizedBox(height: 10),
         SizedBox(
-          height: 42,
+          height: 48,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: _deckIconOptions.length,
@@ -758,19 +907,21 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
               return GestureDetector(
                 onTap: () => setState(() => _selectedEmoji = opt.key),
                 child: Container(
-                  width: 42,
+                  width: 48,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: isSelected ? appText : appTile,
-                    borderRadius: BorderRadius.circular(appRadius),
-                    border: isSelected
-                        ? null
-                        : Border.all(color: appLine, width: 0.8),
+                    color: isSelected ? kLime : kCream,
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(
+                      color: kInk,
+                      width: isSelected ? 2.5 : 2.0,
+                    ),
+                    boxShadow: isSelected ? kSmallShadow : null,
                   ),
                   child: Icon(
                     opt.icon,
-                    size: 19,
-                    color: isSelected ? appBgBottom : appTextDim,
+                    size: 22,
+                    color: kInk,
                   ),
                 ),
               );
@@ -785,10 +936,10 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const AppSectionHeader(title: 'Color Accent'),
+        _buildSectionHeader('COLOR ACCENT', kOrange),
         const SizedBox(height: 10),
         SizedBox(
-          height: 38,
+          height: 44,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: _colorOptions.length,
@@ -799,19 +950,20 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
               return GestureDetector(
                 onTap: () => setState(() => _selectedColor = colorVal),
                 child: Container(
-                  width: 38,
-                  height: 38,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
                     color: Color(colorVal),
-                    borderRadius: BorderRadius.circular(appRadius),
+                    borderRadius: BorderRadius.circular(99),
                     border: Border.all(
-                      color: isSelected ? appText : Colors.white24,
-                      width: isSelected ? 2.0 : 0.8,
+                      color: kInk,
+                      width: isSelected ? 3.0 : 2.0,
                     ),
+                    boxShadow: isSelected ? kSmallShadow : null,
                   ),
                   child: isSelected
                       ? const Icon(Icons.check_rounded,
-                          size: 18, color: Colors.black)
+                          size: 22, color: kInk)
                       : null,
                 ),
               );

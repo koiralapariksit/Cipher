@@ -10,21 +10,6 @@ import 'deck_editor_screen.dart';
 import 'gameplay_screen.dart';
 import 'settings_screen.dart';
 
-// Neo-Brutalist Geometry & Shadow Tokens
-const BorderRadius kAsymmetricRadius = BorderRadius.only(
-  topLeft: Radius.circular(26),
-  topRight: Radius.circular(26),
-  bottomRight: Radius.circular(26),
-  bottomLeft: Radius.circular(8),
-);
-
-const List<BoxShadow> kHardShadow = [
-  BoxShadow(color: kInk, offset: Offset(4, 4), blurRadius: 0),
-];
-
-const List<BoxShadow> kSmallShadow = [
-  BoxShadow(color: kInk, offset: Offset(2, 2), blurRadius: 0),
-];
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

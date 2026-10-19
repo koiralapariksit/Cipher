@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../models/deck.dart';
 import '../models/game_round.dart';
 import '../services/argon_sensor_engine.dart';
 import '../services/game_controller.dart';
 import '../services/storage_service.dart';
-import '../theme/app_theme.dart';
 import '../theme/deck_colors.dart';
 import 'results_screen.dart';
 
@@ -277,116 +277,111 @@ class _GameplayScreenState extends State<GameplayScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: appBgBottom,
-      body: Container(
-        decoration: appBackgroundDecoration,
-        child: Stack(
-          children: [
-            // Base game screen body
-            SafeArea(
-              child: _buildBody(),
-            ),
+    final deckColor = deckColorFor(widget.deck);
 
-            // Razor-sharp 3px Word-level Feedback Indicator Overlay
-            if (_flashLabel != null)
-              Positioned(
-                top: 56,
-                left: 120,
-                right: 120,
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: _flashColor ?? appTile,
-                      borderRadius: BorderRadius.circular(appRadius),
-                      border: Border.all(
-                        color: kInk.withValues(alpha: 0.25),
-                        width: 1.0,
-                      ),
-                    ),
-                    child: Text(
-                      _flashLabel!,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: appFont(
-                        18,
-                        weight: FontWeight.w700,
-                        color: _flashColor != null ? kInk : appText,
-                        spacing: -0.2,
-                      ),
+    return Scaffold(
+      backgroundColor: deckColor,
+      body: Stack(
+        children: [
+          // Base game screen body
+          SafeArea(
+            child: _buildBody(),
+          ),
+
+          // Neo-brutalist Word-level Feedback Indicator Overlay
+          if (_flashLabel != null)
+            Positioned(
+              top: 54,
+              left: 120,
+              right: 120,
+              child: Center(
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: _flashColor ?? kCream,
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(color: kInk, width: 2.5),
+                    boxShadow: kHardShadow,
+                  ),
+                  child: Text(
+                    _flashLabel!,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.bowlbyOne(
+                      fontSize: 18,
+                      color: kInk,
                     ),
                   ),
                 ),
               ),
+            ),
 
-            // Live Telemetry HUD at bottom (Rel Pitch, Baseline, Engine State)
-            Positioned(
-              bottom: 6,
-              left: 0,
-              right: 0,
-              child: ValueListenableBuilder<({double relPitch, double basePitch, TiltState state})>(
-                valueListenable: _sensorDebugNotifier,
-                builder: (context, data, _) {
-                  final isNeutral = data.state == TiltState.neutralReady;
-                  final isHoldingCorrect = data.state == TiltState.holdingCorrect;
-                  final isHoldingPass = data.state == TiltState.holdingPass;
-                  final isUncalibrated = data.state == TiltState.uncalibrated;
+          // Live Telemetry HUD at bottom (Rel Pitch, Baseline, Engine State)
+          Positioned(
+            bottom: 6,
+            left: 0,
+            right: 0,
+            child: ValueListenableBuilder<
+                ({double relPitch, double basePitch, TiltState state})>(
+              valueListenable: _sensorDebugNotifier,
+              builder: (context, data, _) {
+                final isNeutral = data.state == TiltState.neutralReady;
+                final isHoldingCorrect = data.state == TiltState.holdingCorrect;
+                final isHoldingPass = data.state == TiltState.holdingPass;
+                final isUncalibrated = data.state == TiltState.uncalibrated;
 
-                  final Color badgeColor = isHoldingCorrect
-                      ? kLime
-                      : (isHoldingPass
-                          ? kOrange
-                          : (isNeutral
-                              ? appText
-                              : (isUncalibrated
-                                  ? kOrange.withValues(alpha: 0.8)
-                                  : appTextDim)));
+                final Color badgeColor = isHoldingCorrect
+                    ? kLime
+                    : (isHoldingPass
+                        ? kOrange
+                        : (isNeutral
+                            ? kCream
+                            : (isUncalibrated
+                                ? kYellow
+                                : kCream.withValues(alpha: 0.6))));
 
-                  final relSign = data.relPitch >= 0 ? '+' : '';
-                  final baseSign = data.basePitch >= 0 ? '+' : '';
-                  final stateLabel = switch (data.state) {
-                    TiltState.uncalibrated => 'UNCALIBRATED',
-                    TiltState.neutralReady => 'NEUTRAL READY',
-                    TiltState.holdingCorrect => 'HOLDING CORRECT',
-                    TiltState.holdingPass => 'HOLDING PASS',
-                    TiltState.waitForNeutral => 'WAIT FOR NEUTRAL',
-                  };
+                final relSign = data.relPitch >= 0 ? '+' : '';
+                final baseSign = data.basePitch >= 0 ? '+' : '';
+                final stateLabel = switch (data.state) {
+                  TiltState.uncalibrated => 'UNCALIBRATED',
+                  TiltState.neutralReady => 'NEUTRAL READY',
+                  TiltState.holdingCorrect => 'HOLDING CORRECT',
+                  TiltState.holdingPass => 'HOLDING PASS',
+                  TiltState.waitForNeutral => 'WAIT FOR NEUTRAL',
+                };
 
-                  return Center(
-                    child: IgnorePointer(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: appField,
-                          borderRadius: BorderRadius.circular(appRadius),
-                          border: Border.all(
-                            color: badgeColor.withValues(alpha: 0.45),
-                            width: 0.8,
-                          ),
-                        ),
-                        child: Text(
-                          'REL PITCH: $relSign${data.relPitch.toStringAsFixed(1)}°  |  BASELINE: $baseSign${data.basePitch.toStringAsFixed(1)}°  |  STATE: $stateLabel',
-                          style: appFont(
-                            11,
-                            color: badgeColor,
-                            weight: FontWeight.w600,
-                            spacing: 0.3,
-                          ),
+                return Center(
+                  child: IgnorePointer(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: kInk,
+                        borderRadius: BorderRadius.circular(99),
+                        border: Border.all(color: kInk, width: 1.5),
+                        boxShadow: kSmallShadow,
+                      ),
+                      child: Text(
+                        'REL PITCH: $relSign${data.relPitch.toStringAsFixed(1)}°  |  BASELINE: $baseSign${data.basePitch.toStringAsFixed(1)}°  |  STATE: $stateLabel',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 11,
+                          color: badgeColor,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.3,
                         ),
                       ),
                     ),
-                  );
-                },
-              ),
+                  ),
+                );
+              },
             ),
+          ),
 
-            // Full-screen Paused Modal Overlay
-            if (_controller.phase == GamePhase.paused) _buildPauseOverlay(),
-          ],
-        ),
+          // Full-screen Paused Modal Overlay
+          if (_controller.phase == GamePhase.paused) _buildPauseOverlay(),
+        ],
       ),
     );
   }
@@ -395,7 +390,7 @@ class _GameplayScreenState extends State<GameplayScreen>
     switch (_controller.phase) {
       case GamePhase.idle:
         return const Center(
-          child: CircularProgressIndicator(color: appText),
+          child: CircularProgressIndicator(color: kInk),
         );
       case GamePhase.countdown:
         return _buildCountdown();
@@ -404,24 +399,51 @@ class _GameplayScreenState extends State<GameplayScreen>
         return _buildPlaying();
       case GamePhase.finished:
         return Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                "TIME'S UP!",
-                style: appFont(
-                  52,
-                  weight: FontWeight.w700,
-                  spacing: -1.0,
-                  color: appText,
+          child: Container(
+            width: 440,
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+            decoration: BoxDecoration(
+              color: kInk,
+              borderRadius: kAsymmetricRadius,
+              border: Border.all(color: kCream, width: 3.5),
+              boxShadow: const [
+                BoxShadow(
+                    color: Color(0xFF0F0A1C),
+                    offset: Offset(6, 6),
+                    blurRadius: 0),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "Time's Up!",
+                  style: GoogleFonts.bowlbyOne(
+                    fontSize: 44,
+                    color: kYellow,
+                    height: 1.0,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Calculating results...',
-                style: appFont(16, color: appTextDim),
-              ),
-            ],
+                const SizedBox(height: 12),
+                Text(
+                  '${_controller.score}',
+                  style: GoogleFonts.bowlbyOne(
+                    fontSize: 72,
+                    color: kLime,
+                    height: 1.0,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Calculating results...',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: kCream,
+                  ),
+                ),
+              ],
+            ),
           ),
         );
     }
@@ -429,55 +451,54 @@ class _GameplayScreenState extends State<GameplayScreen>
 
   // ── Countdown Phase: 3-2-1 "Place on Forehead" ───────────────────────────
   Widget _buildCountdown() {
-    final deckColor = deckColorFor(widget.deck);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
             decoration: BoxDecoration(
-              color: deckColor,
-              borderRadius: BorderRadius.circular(appRadius),
-              border: Border.all(color: kInk.withValues(alpha: 0.15), width: 1.0),
+              color: kCream,
+              borderRadius: BorderRadius.circular(99),
+              border: Border.all(color: kInk, width: 2.0),
+              boxShadow: kSmallShadow,
             ),
             child: Text(
               widget.deck.name,
-              style: appFont(14, weight: FontWeight.w700, color: kInk),
+              style: GoogleFonts.bowlbyOne(fontSize: 15, color: kInk),
             ),
           ),
           const SizedBox(height: 8),
-          // Large countdown numeral in Bricolage Grotesque
+          // Large countdown numeral in Bowlby One
           Text(
             '${_controller.countdownValue}',
-            style: appFont(
-              100,
-              weight: FontWeight.w700,
-              color: appText,
-              spacing: -2.0,
+            style: GoogleFonts.bowlbyOne(
+              fontSize: 110,
+              color: kInk,
+              height: 1.0,
             ),
           ),
           const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             decoration: BoxDecoration(
-              color: appField,
-              borderRadius: BorderRadius.circular(appRadius),
-              border: Border.all(color: appLine, width: 0.8),
+              color: kYellow,
+              borderRadius: BorderRadius.circular(99),
+              border: Border.all(color: kInk, width: 2.5),
+              boxShadow: kSmallShadow,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(Icons.phone_android_rounded,
-                    color: appTextDim, size: 18),
+                    color: kInk, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   'PLACE ON FOREHEAD',
-                  style: appFont(
-                    13,
-                    weight: FontWeight.w600,
-                    spacing: 0.8,
-                    color: appText,
+                  style: GoogleFonts.bowlbyOne(
+                    fontSize: 13,
+                    color: kInk,
+                    letterSpacing: 0.5,
                   ),
                 ),
               ],
@@ -491,57 +512,107 @@ class _GameplayScreenState extends State<GameplayScreen>
   // ── Active Gameplay View: Ergonomic Landscape Layout ─────────────────────
   Widget _buildPlaying() {
     final showButtons = _storage.settings.showManualButtons;
-    final deckColor = deckColorFor(widget.deck);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
       child: Column(
         children: [
-          // Top Bar: Timer, Deck Badge, Score Badge, Invert Button, Pause Button
+          // Top Bar: Exit button, Timer display, Deck Name, Score badge, Sound & Pause
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              // Quit button: rounded kInk button labeled '✕ QUIT' with 2px kInk border, cream text, Offset(2, 2) shadow
+              GestureDetector(
+                onTap: _quitToMenu,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: kInk,
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(color: kInk, width: 2.0),
+                    boxShadow: const [
+                      BoxShadow(
+                          color: kInk, offset: Offset(2, 2), blurRadius: 0),
+                    ],
+                  ),
+                  child: Text(
+                    '✕ QUIT',
+                    style: GoogleFonts.bowlbyOne(
+                      fontSize: 13,
+                      color: kCream,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ),
+
+              // Timer Display in pill
               _buildPillTimer(_controller.timeRemaining),
+
+              // Deck name badge in dark ink
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 decoration: BoxDecoration(
-                  color: deckColor,
-                  borderRadius: BorderRadius.circular(appRadius),
-                  border: Border.all(color: kInk.withValues(alpha: 0.15), width: 1.0),
+                  color: kCream,
+                  borderRadius: BorderRadius.circular(99),
+                  border: Border.all(color: kInk, width: 2.0),
+                  boxShadow: kSmallShadow,
                 ),
                 child: Text(
                   widget.deck.name,
-                  style: appFont(14,
-                      weight: FontWeight.w700, color: kInk),
+                  style: GoogleFonts.bowlbyOne(fontSize: 14, color: kInk),
                 ),
               ),
+
+              // Score badge & controls
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   _buildScoreBadge(_controller.score),
                   const SizedBox(width: 8),
-                  AppIconButton(
-                    icon: _storage.settings.soundEnabled
-                        ? Icons.volume_up_rounded
-                        : Icons.volume_off_rounded,
-                    tooltip: _storage.settings.soundEnabled
-                        ? 'Mute Sound Effects'
-                        : 'Enable Sound Effects',
-                    size: 36,
-                    iconColor: _storage.settings.soundEnabled ? appText : appTextDim,
+                  GestureDetector(
                     onTap: _toggleSound,
+                    child: Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: kCream,
+                        borderRadius: BorderRadius.circular(99),
+                        border: Border.all(color: kInk, width: 2.0),
+                        boxShadow: kSmallShadow,
+                      ),
+                      child: Icon(
+                        _storage.settings.soundEnabled
+                            ? Icons.volume_up_rounded
+                            : Icons.volume_off_rounded,
+                        size: 20,
+                        color: kInk,
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 8),
-                  AppIconButton(
-                    icon: Icons.pause_rounded,
-                    tooltip: 'Pause game',
-                    size: 36,
-                    iconColor: appTextDim,
+                  GestureDetector(
                     onTap: () {
                       _engine.stop();
                       _controller.pause();
                     },
+                    child: Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: kCream,
+                        borderRadius: BorderRadius.circular(99),
+                        border: Border.all(color: kInk, width: 2.0),
+                        boxShadow: kSmallShadow,
+                      ),
+                      child: const Icon(
+                        Icons.pause_rounded,
+                        size: 20,
+                        color: kInk,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -554,7 +625,7 @@ class _GameplayScreenState extends State<GameplayScreen>
           Expanded(
             child: Row(
               children: [
-                // Left Thumb PASS Button
+                // Left Thumb PASS Button (non-moving with fixed shadows)
                 if (showButtons)
                   _ThumbButton(
                     label: 'PASS',
@@ -564,32 +635,52 @@ class _GameplayScreenState extends State<GameplayScreen>
                     onTap: _handleManualPass,
                   ),
 
-                // Center Word Display
+                // Center Word Display with asymmetric corners, 3px kInk border, Offset(6, 6) shadow
+                // Animated with scale and alternating rotation on every word transition
                 Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: deckColor,
-                      borderRadius: BorderRadius.circular(appRadius),
-                      border: Border.all(color: kInk.withValues(alpha: 0.15), width: 1.0),
-                    ),
-                    child: Center(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 820),
-                          child: Text(
-                            _controller.currentWord,
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            style: appFont(
-                              56,
-                              weight: FontWeight.w800,
-                              color: kInk,
-                              spacing: -1.0,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 240),
+                    switchInCurve: Curves.easeOutBack,
+                    switchOutCurve: Curves.easeIn,
+                    transitionBuilder: (child, animation) {
+                      final isEven = _controller.cardIndex % 2 == 0;
+                      final angle =
+                          (isEven ? 0.035 : -0.035) * (1.0 - animation.value);
+                      return ScaleTransition(
+                        scale: animation,
+                        child: Transform.rotate(
+                          angle: angle,
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: Container(
+                      key: ValueKey<String>(
+                          '${_controller.cardIndex}_${_controller.currentWord}'),
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: kCream,
+                        borderRadius: kAsymmetricRadius,
+                        border: Border.all(color: kInk, width: 3.0),
+                        boxShadow: kCardShadow,
+                      ),
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 820),
+                            child: Text(
+                              _controller.currentWord,
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              style: GoogleFonts.bowlbyOne(
+                                fontSize: 54,
+                                color: kInk,
+                                height: 1.05,
+                              ),
                             ),
                           ),
                         ),
@@ -598,10 +689,10 @@ class _GameplayScreenState extends State<GameplayScreen>
                   ),
                 ),
 
-                // Right Thumb GOT IT Button
+                // Right Thumb GOT IT Button (non-moving with fixed shadows)
                 if (showButtons)
                   _ThumbButton(
-                    label: 'GOT IT',
+                    label: 'GOT IT!',
                     sublabel: 'Tilt Down ↓',
                     accentColor: kLime,
                     icon: Icons.check_rounded,
@@ -618,30 +709,34 @@ class _GameplayScreenState extends State<GameplayScreen>
   Widget _buildPillTimer(int seconds) {
     final isUrgent = seconds <= 10;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
       decoration: BoxDecoration(
-        color: isUrgent ? appPass.withValues(alpha: 0.2) : appField,
-        borderRadius: BorderRadius.circular(appRadius),
-        border: Border.all(
-          color: isUrgent ? appPass : appLine,
-          width: 0.8,
-        ),
+        color: isUrgent ? kOrange : kCream,
+        borderRadius: BorderRadius.circular(99),
+        border: Border.all(color: kInk, width: 2.0),
+        boxShadow: kSmallShadow,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             isUrgent ? Icons.timer_rounded : Icons.timer_outlined,
-            size: 16,
-            color: isUrgent ? appPass : appTextDim,
+            size: 18,
+            color: isUrgent ? kCream : kInk,
           ),
           const SizedBox(width: 6),
-          Text(
-            '${seconds}s',
-            style: appFont(
-              15,
-              weight: FontWeight.w600,
-              color: isUrgent ? appPass : appText,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              '${seconds}s',
+              style: GoogleFonts.bowlbyOne(
+                fontSize: 110,
+                color: isUrgent ? kCream : kInk,
+                shadows: isUrgent
+                    ? const [Shadow(color: kInk, offset: Offset(3, 3))]
+                    : null,
+              ),
             ),
           ),
         ],
@@ -653,18 +748,19 @@ class _GameplayScreenState extends State<GameplayScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: appField,
-        borderRadius: BorderRadius.circular(appRadius),
-        border: Border.all(color: appLine, width: 0.8),
+        color: kYellow,
+        borderRadius: BorderRadius.circular(99),
+        border: Border.all(color: kInk, width: 2.0),
+        boxShadow: kSmallShadow,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.star_rounded, size: 16, color: appText),
-          const SizedBox(width: 6),
+          const Text('★', style: TextStyle(fontSize: 14, color: kInk)),
+          const SizedBox(width: 5),
           Text(
             '$score',
-            style: appFont(15, weight: FontWeight.w600, color: appText),
+            style: GoogleFonts.bowlbyOne(fontSize: 14, color: kInk),
           ),
         ],
       ),
@@ -677,87 +773,97 @@ class _GameplayScreenState extends State<GameplayScreen>
       color: Colors.black.withValues(alpha: 0.85),
       alignment: Alignment.center,
       child: Container(
-        width: 420,
-        padding: const EdgeInsets.all(24),
+        width: 440,
+        padding: const EdgeInsets.all(26),
         decoration: BoxDecoration(
-          color: appBgMid,
-          borderRadius: BorderRadius.circular(appRadius),
-          border: Border.all(color: appLine, width: 0.8),
+          color: kInk,
+          borderRadius: kAsymmetricRadius,
+          border: Border.all(color: kCream, width: 3.0),
+          boxShadow: const [
+            BoxShadow(
+                color: Color(0xFF0F0A1C),
+                offset: Offset(6, 6),
+                blurRadius: 0),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 44,
-              height: 44,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
-                color: appTile,
-                borderRadius: BorderRadius.circular(appRadius),
-                border: Border.all(color: appLine, width: 0.8),
+                color: kYellow,
+                borderRadius: BorderRadius.circular(99),
+                border: Border.all(color: kInk, width: 2.0),
+                boxShadow: kSmallShadow,
               ),
               child: const Icon(
                 Icons.pause_rounded,
-                size: 24,
-                color: appText,
+                size: 26,
+                color: kInk,
               ),
             ),
             const SizedBox(height: 14),
             Text(
               'Game Paused',
-              style: appFont(
-                22,
-                weight: FontWeight.w700,
-                spacing: -0.5,
-                color: appText,
+              style: GoogleFonts.bowlbyOne(
+                fontSize: 26,
+                color: kYellow,
               ),
             ),
             const SizedBox(height: 6),
             Text(
               'Game timer and motion sensors are suspended.',
               textAlign: TextAlign.center,
-              style: appFont(13, color: appTextDim),
+              style: GoogleFonts.dmSans(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: kCream,
+              ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 22),
             Row(
               children: [
                 Expanded(
                   child: GestureDetector(
                     onTap: _quitToMenu,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 11),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        color: appTile,
-                        borderRadius: BorderRadius.circular(appRadius),
-                        border: Border.all(color: appLine, width: 0.8),
+                        color: kCream,
+                        borderRadius: BorderRadius.circular(99),
+                        border: Border.all(color: kInk, width: 2.0),
+                        boxShadow: kSmallShadow,
                       ),
                       alignment: Alignment.center,
                       child: Text(
                         'Quit to Menu',
-                        style: appFont(
-                          13,
-                          weight: FontWeight.w600,
-                          color: appTextDim,
+                        style: GoogleFonts.bowlbyOne(
+                          fontSize: 13,
+                          color: kInk,
                         ),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 14),
                 Expanded(
                   child: GestureDetector(
                     onTap: _resumeFromPause,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 11),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        color: kYellow,
-                        borderRadius: BorderRadius.circular(appRadius),
+                        color: kLime,
+                        borderRadius: BorderRadius.circular(99),
+                        border: Border.all(color: kInk, width: 2.0),
+                        boxShadow: kSmallShadow,
                       ),
                       alignment: Alignment.center,
                       child: Text(
                         'Resume',
-                        style: appFont(
-                          13,
-                          weight: FontWeight.w700,
+                        style: GoogleFonts.bowlbyOne(
+                          fontSize: 13,
                           color: kInk,
                         ),
                       ),
@@ -793,54 +899,48 @@ class _ThumbButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 90,
+      width: 100,
       child: GestureDetector(
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
           decoration: BoxDecoration(
-            color: appTile,
-            borderRadius: BorderRadius.circular(appRadius),
-            border: Border.all(
-              color: accentColor.withValues(alpha: 0.5),
-              width: 0.8,
-            ),
+            color: accentColor,
+            borderRadius: kAsymmetricRadius,
+            border: Border.all(color: kInk, width: 3.0),
+            boxShadow: const [
+              BoxShadow(color: kInk, offset: Offset(4, 4), blurRadius: 0),
+            ],
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 32,
-                height: 32,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(appRadius),
-                  color: accentColor.withValues(alpha: 0.15),
-                  border: Border.all(
-                    color: accentColor.withValues(alpha: 0.5),
-                    width: 0.8,
-                  ),
+                  borderRadius: BorderRadius.circular(99),
+                  color: kInk,
                 ),
-                child: Icon(icon, size: 18, color: accentColor),
+                child: Icon(icon, size: 22, color: accentColor),
               ),
               const SizedBox(height: 8),
               Text(
                 label,
                 textAlign: TextAlign.center,
-                style: appFont(
-                  12,
-                  weight: FontWeight.w600,
-                  spacing: 0.5,
-                  color: accentColor,
+                style: GoogleFonts.bowlbyOne(
+                  fontSize: 16,
+                  color: kInk,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 sublabel,
                 textAlign: TextAlign.center,
-                style: appFont(
-                  10,
-                  weight: FontWeight.w400,
-                  color: appTextDim,
+                style: GoogleFonts.dmSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: kInk,
                 ),
               ),
             ],

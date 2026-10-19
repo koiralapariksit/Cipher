@@ -1,10 +1,12 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/storage_service.dart';
-import '../theme/app_theme.dart';
+import '../theme/deck_colors.dart';
 
 /// Settings screen for configuring sound, vibration, round duration,
-/// manual button visibility, and resetting data.
+/// manual button visibility, and resetting data — 100% Neo-Brutalist.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -32,369 +34,327 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: appBgBottom,
-        body: Container(
-          decoration: appBackgroundDecoration,
-          child: SafeArea(
-            child: Column(
-              children: [
-                // Header
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                  child: Row(
-                    children: [
-                      AppIconButton(
-                        icon: Icons.arrow_back_rounded,
-                        tooltip: 'Back',
-                        size: 40,
-                        onTap: () => Navigator.pop(context),
-                      ),
-                      const SizedBox(width: 14),
-                      Text(
-                        'Settings',
-                        style: appFont(26,
-                            weight: FontWeight.w700, spacing: -0.6),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Settings List
-                Expanded(
-                  child: ListView(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    children: [
-                      const AppSectionHeader(title: 'Gameplay Defaults'),
-                      const SizedBox(height: 10),
-                      Container(
+        backgroundColor: kBlue,
+        body: SafeArea(
+          child: Column(
+            children: [
+              // ── Custom Neo-Brutalist Header ──
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 7),
                         decoration: BoxDecoration(
-                          color: appTile,
-                          borderRadius: BorderRadius.circular(appRadius),
-                          border: Border.all(color: appLine, width: 0.8),
+                          color: kInk,
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(color: kInk, width: 2.0),
+                          boxShadow: kSmallShadow,
                         ),
-                        child: Column(
+                        child: Text(
+                          '✕ BACK',
+                          style: GoogleFonts.bowlbyOne(
+                            fontSize: 13,
+                            color: kCream,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Transform.rotate(
+                      angle: -2 * math.pi / 180,
+                      child: RichText(
+                        text: TextSpan(
                           children: [
-                            _buildDurationTile(),
-                            const Divider(
-                              height: 1,
-                              color: appLine,
+                            TextSpan(
+                              text: 'Settings',
+                              style: GoogleFonts.bowlbyOne(
+                                fontSize: 36,
+                                color: kCream,
+                                height: 0.95,
+                              ),
                             ),
-                            SwitchListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 6),
-                              secondary: Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  borderRadius:
-                                      BorderRadius.circular(appRadius),
-                                  color: appField,
-                                  border:
-                                      Border.all(color: appLine, width: 0.8),
-                                ),
-                                child: const Icon(Icons.touch_app_rounded,
-                                    color: appText, size: 19),
+                            TextSpan(
+                              text: '!',
+                              style: GoogleFonts.bowlbyOne(
+                                fontSize: 36,
+                                color: kYellow,
+                                height: 0.95,
                               ),
-                              title: Text(
-                                'Always Show Action Buttons',
-                                style: appFont(15,
-                                    weight: FontWeight.w600, color: appText),
-                              ),
-                              subtitle: Text(
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── Settings List ──
+              Expanded(
+                child: ListView(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  children: [
+                    _buildSectionHeader('GAMEPLAY DEFAULTS', kYellow),
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: kCream,
+                        borderRadius: kAsymmetricRadius,
+                        border: Border.all(color: kInk, width: 3.0),
+                        boxShadow: kCardShadow,
+                      ),
+                      child: Column(
+                        children: [
+                          _buildDurationTile(),
+                          const Divider(height: 2, thickness: 2, color: kInk),
+                          _buildSwitchTile(
+                            title: 'Always Show Action Buttons',
+                            subtitle:
                                 'Show on-screen Pass & Correct buttons alongside tilt controls',
-                                style: appFont(12, color: appTextDim),
-                              ),
-                              value: _settings.showManualButtons,
-                              activeThumbColor: appBgBottom,
-                              activeTrackColor: appText,
-                              inactiveTrackColor: appField,
-                              onChanged: (val) => _save(
-                                  _settings.copyWith(showManualButtons: val)),
-                            ),
-                            const Divider(
-                              height: 1,
-                              color: appLine,
-                            ),
-                            SwitchListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 6),
-                              secondary: Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  borderRadius:
-                                      BorderRadius.circular(appRadius),
-                                  color: appField,
-                                  border:
-                                      Border.all(color: appLine, width: 0.8),
-                                ),
-                                child: const Icon(Icons.swap_vert_rounded,
-                                    color: appText, size: 19),
-                              ),
-                              title: Text(
-                                'Invert Tilt Controls',
-                                style: appFont(15,
-                                    weight: FontWeight.w600, color: appText),
-                              ),
-                              subtitle: Text(
-                                _settings.invertTilt
-                                    ? 'Inverted: Tilt UP = Pass, Tilt DOWN = Correct'
-                                    : 'Default: Tilt DOWN = Pass, Tilt UP = Correct',
-                                style: appFont(12, color: appTextDim),
-                              ),
-                              value: _settings.invertTilt,
-                              activeThumbColor: appBgBottom,
-                              activeTrackColor: appText,
-                              inactiveTrackColor: appField,
-                              onChanged: (val) => _save(
-                                  _settings.copyWith(invertTilt: val)),
-                            ),
-                          ],
-                        ),
+                            icon: Icons.touch_app_rounded,
+                            iconColor: kLime,
+                            value: _settings.showManualButtons,
+                            onChanged: (val) => _save(
+                                _settings.copyWith(showManualButtons: val)),
+                          ),
+                          const Divider(height: 2, thickness: 2, color: kInk),
+                          _buildSwitchTile(
+                            title: 'Invert Tilt Controls',
+                            subtitle: _settings.invertTilt
+                                ? 'Inverted: Tilt UP = Pass, Tilt DOWN = Correct'
+                                : 'Default: Tilt DOWN = Pass, Tilt UP = Correct',
+                            icon: Icons.swap_vert_rounded,
+                            iconColor: kOrange,
+                            value: _settings.invertTilt,
+                            onChanged: (val) =>
+                                _save(_settings.copyWith(invertTilt: val)),
+                          ),
+                        ],
                       ),
+                    ),
 
-                      const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                      const AppSectionHeader(title: 'Sound & Haptics'),
-                      const SizedBox(height: 10),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: appTile,
-                          borderRadius: BorderRadius.circular(appRadius),
-                          border: Border.all(color: appLine, width: 0.8),
-                        ),
-                        child: Column(
-                          children: [
-                            SwitchListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 6),
-                              secondary: Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  borderRadius:
-                                      BorderRadius.circular(appRadius),
-                                  color: appField,
-                                  border:
-                                      Border.all(color: appLine, width: 0.8),
-                                ),
-                                child: const Icon(Icons.volume_up_rounded,
-                                    color: appText, size: 19),
-                              ),
-                              title: Text(
-                                'Sound Effects',
-                                style: appFont(15,
-                                    weight: FontWeight.w600, color: appText),
-                              ),
-                              subtitle: Text(
+                    _buildSectionHeader('SOUND & HAPTICS', kLime),
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: kCream,
+                        borderRadius: kAsymmetricRadius,
+                        border: Border.all(color: kInk, width: 3.0),
+                        boxShadow: kCardShadow,
+                      ),
+                      child: Column(
+                        children: [
+                          _buildSwitchTile(
+                            title: 'Sound Effects',
+                            subtitle:
                                 'Audio cues for correct, pass, and timer countdown',
-                                style: appFont(12, color: appTextDim),
-                              ),
-                              value: _settings.soundEnabled,
-                              activeThumbColor: appBgBottom,
-                              activeTrackColor: appText,
-                              inactiveTrackColor: appField,
-                              onChanged: (val) =>
-                                  _save(_settings.copyWith(soundEnabled: val)),
-                            ),
-                            const Divider(
-                              height: 1,
-                              color: appLine,
-                            ),
-                            SwitchListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 6),
-                              secondary: Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  borderRadius:
-                                      BorderRadius.circular(appRadius),
-                                  color: appField,
-                                  border:
-                                      Border.all(color: appLine, width: 0.8),
-                                ),
-                                child: const Icon(Icons.vibration_rounded,
-                                    color: appText, size: 19),
-                              ),
-                              title: Text(
-                                'Haptic Vibration',
-                                style: appFont(15,
-                                    weight: FontWeight.w600, color: appText),
-                              ),
-                              subtitle: Text(
+                            icon: Icons.volume_up_rounded,
+                            iconColor: kYellow,
+                            value: _settings.soundEnabled,
+                            onChanged: (val) =>
+                                _save(_settings.copyWith(soundEnabled: val)),
+                          ),
+                          const Divider(height: 2, thickness: 2, color: kInk),
+                          _buildSwitchTile(
+                            title: 'Haptic Vibration',
+                            subtitle:
                                 'Tactile vibration on correct nodding & pass tilt',
-                                style: appFont(12, color: appTextDim),
-                              ),
-                              value: _settings.vibrationEnabled,
-                              activeThumbColor: appBgBottom,
-                              activeTrackColor: appText,
-                              inactiveTrackColor: appField,
-                              onChanged: (val) => _save(
-                                  _settings.copyWith(vibrationEnabled: val)),
-                            ),
-                          ],
-                        ),
+                            icon: Icons.vibration_rounded,
+                            iconColor: kLime,
+                            value: _settings.vibrationEnabled,
+                            onChanged: (val) =>
+                                _save(_settings.copyWith(vibrationEnabled: val)),
+                          ),
+                        ],
                       ),
+                    ),
 
-                      const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                      const AppSectionHeader(title: 'Data & Reset'),
-                      const SizedBox(height: 10),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: appTile,
-                          borderRadius: BorderRadius.circular(appRadius),
-                          border: Border.all(color: appLine, width: 0.8),
-                        ),
-                        child: Column(
-                          children: [
-                            ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 6),
-                              leading: Container(
-                                width: 36,
-                                height: 36,
+                    _buildSectionHeader('DATA & RESET', kPink),
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: kCream,
+                        borderRadius: kAsymmetricRadius,
+                        border: Border.all(color: kInk, width: 3.0),
+                        boxShadow: kCardShadow,
+                      ),
+                      child: Column(
+                        children: [
+                          ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            leading: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(99),
+                                color: kYellow,
+                                border: Border.all(color: kInk, width: 2.0),
+                              ),
+                              child: const Icon(Icons.history_rounded,
+                                  color: kInk, size: 22),
+                            ),
+                            title: Text(
+                              'Clear Round History',
+                              style: GoogleFonts.dmSans(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: kInk,
+                              ),
+                            ),
+                            subtitle: Text(
+                              '${_storage.roundHistory.length} saved round records',
+                              style: GoogleFonts.dmSans(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: kInkDim,
+                              ),
+                            ),
+                            trailing: GestureDetector(
+                              onTap: _storage.roundHistory.isEmpty
+                                  ? null
+                                  : () => _confirmClearHistory(context),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 7),
                                 decoration: BoxDecoration(
-                                  borderRadius:
-                                      BorderRadius.circular(appRadius),
-                                  color: appField,
-                                  border:
-                                      Border.all(color: appLine, width: 0.8),
+                                  color: _storage.roundHistory.isEmpty
+                                      ? kCream
+                                      : kOrange,
+                                  borderRadius: BorderRadius.circular(99),
+                                  border: Border.all(color: kInk, width: 2.0),
+                                  boxShadow: _storage.roundHistory.isEmpty
+                                      ? null
+                                      : kSmallShadow,
                                 ),
-                                child: const Icon(Icons.history_rounded,
-                                    color: appText, size: 19),
-                              ),
-                              title: Text(
-                                'Clear Round History',
-                                style: appFont(15,
-                                    weight: FontWeight.w600, color: appText),
-                              ),
-                              subtitle: Text(
-                                '${_storage.roundHistory.length} saved round records',
-                                style: appFont(12, color: appTextDim),
-                              ),
-                              trailing: GestureDetector(
-                                onTap: _storage.roundHistory.isEmpty
-                                    ? null
-                                    : () => _confirmClearHistory(context),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 6),
-                                  decoration: BoxDecoration(
+                                child: Text(
+                                  'CLEAR',
+                                  style: GoogleFonts.bowlbyOne(
+                                    fontSize: 11,
                                     color: _storage.roundHistory.isEmpty
-                                        ? Colors.transparent
-                                        : appTile,
-                                    borderRadius:
-                                        BorderRadius.circular(appRadius),
-                                    border: Border.all(
-                                      color: _storage.roundHistory.isEmpty
-                                          ? appLine
-                                          : appTextDim,
-                                      width: 0.8,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    'CLEAR',
-                                    style: appFont(
-                                      11,
-                                      weight: FontWeight.w600,
-                                      spacing: 0.5,
-                                      color: _storage.roundHistory.isEmpty
-                                          ? appTextDim
-                                          : appText,
-                                    ),
+                                        ? kInkDim
+                                        : kInk,
+                                    letterSpacing: 0.5,
                                   ),
                                 ),
                               ),
                             ),
-                            const Divider(
-                              height: 1,
-                              color: appLine,
+                          ),
+                          const Divider(height: 2, thickness: 2, color: kInk),
+                          ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            leading: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(99),
+                                color: kPink,
+                                border: Border.all(color: kInk, width: 2.0),
+                              ),
+                              child: const Icon(Icons.delete_forever_rounded,
+                                  color: kInk, size: 22),
                             ),
-                            ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 6),
-                              leading: Container(
-                                width: 36,
-                                height: 36,
+                            title: Text(
+                              'Reset All Data & Stats',
+                              style: GoogleFonts.dmSans(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: kInk,
+                              ),
+                            ),
+                            subtitle: Text(
+                              'Deletes custom decks, favorites, and resets settings',
+                              style: GoogleFonts.dmSans(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: kInkDim,
+                              ),
+                            ),
+                            trailing: GestureDetector(
+                              onTap: () => _confirmResetAllData(context),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 7),
                                 decoration: BoxDecoration(
-                                  borderRadius:
-                                      BorderRadius.circular(appRadius),
-                                  color: appPass.withValues(alpha: 0.15),
-                                  border: Border.all(
-                                    color: appPass.withValues(alpha: 0.4),
-                                    width: 0.8,
-                                  ),
+                                  color: kPink,
+                                  borderRadius: BorderRadius.circular(99),
+                                  border: Border.all(color: kInk, width: 2.0),
+                                  boxShadow: kSmallShadow,
                                 ),
-                                child: const Icon(Icons.delete_forever_rounded,
-                                    color: appPass, size: 19),
-                              ),
-                              title: Text(
-                                'Reset All Data & Stats',
-                                style: appFont(15,
-                                    weight: FontWeight.w600, color: appPass),
-                              ),
-                              subtitle: Text(
-                                'Deletes custom decks, favorites, and reset settings to default',
-                                style: appFont(12, color: appTextDim),
-                              ),
-                              trailing: GestureDetector(
-                                onTap: () => _confirmResetAllData(context),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: appPass.withValues(alpha: 0.15),
-                                    borderRadius:
-                                        BorderRadius.circular(appRadius),
-                                    border: Border.all(
-                                      color: appPass,
-                                      width: 0.8,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    'RESET',
-                                    style: appFont(
-                                      11,
-                                      weight: FontWeight.w600,
-                                      spacing: 0.5,
-                                      color: appPass,
-                                    ),
+                                child: Text(
+                                  'RESET',
+                                  style: GoogleFonts.bowlbyOne(
+                                    fontSize: 11,
+                                    color: kInk,
+                                    letterSpacing: 0.5,
                                   ),
                                 ),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
+                    ),
 
-                      const SizedBox(height: 36),
-                      Center(
-                        child: Column(
-                          children: [
-                            Text(
-                              'Cipher',
-                              style: appFont(14,
-                                  weight: FontWeight.w600, color: appTextDim),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Minimalist Edition',
-                              style: appFont(12, color: appTextDim),
-                            ),
-                          ],
+                    const SizedBox(height: 32),
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: kCream,
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(color: kInk, width: 2.0),
+                          boxShadow: kSmallShadow,
+                        ),
+                        child: Text(
+                          'Cipher • Forehead Charades',
+                          style: GoogleFonts.bowlbyOne(
+                            fontSize: 12,
+                            color: kInk,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, Color badgeColor) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: badgeColor,
+          borderRadius: BorderRadius.circular(99),
+          border: Border.all(color: kInk, width: 2.0),
+          boxShadow: kSmallShadow,
+        ),
+        child: Text(
+          title,
+          style: GoogleFonts.bowlbyOne(
+            fontSize: 12,
+            color: kInk,
+            letterSpacing: 0.5,
           ),
         ),
       ),
@@ -408,14 +368,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(appRadius),
-              color: appField,
-              border: Border.all(color: appLine, width: 0.8),
+              borderRadius: BorderRadius.circular(99),
+              color: kYellow,
+              border: Border.all(color: kInk, width: 2.0),
             ),
-            child: const Icon(Icons.timer_outlined, color: appText, size: 19),
+            child: const Icon(Icons.timer_outlined, color: kInk, size: 22),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -424,11 +384,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Text(
                   'Default Duration',
-                  style: appFont(15, weight: FontWeight.w600, color: appText),
+                  style: GoogleFonts.dmSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: kInk,
+                  ),
                 ),
                 Text(
                   'Initial timer for round starts',
-                  style: appFont(12, color: appTextDim),
+                  style: GoogleFonts.dmSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: kInkDim,
+                  ),
                 ),
               ],
             ),
@@ -445,18 +413,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: selected ? appText : appField,
-                    borderRadius: BorderRadius.circular(appRadius),
-                    border: selected
-                        ? null
-                        : Border.all(color: appLine, width: 0.8),
+                    color: selected ? kYellow : Colors.white,
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(color: kInk, width: 2.0),
+                    boxShadow: selected ? kSmallShadow : null,
                   ),
                   child: Text(
                     '${d}s',
-                    style: appFont(
-                      13,
-                      weight: FontWeight.w600,
-                      color: selected ? appBgBottom : appTextDim,
+                    style: GoogleFonts.bowlbyOne(
+                      fontSize: 12,
+                      color: kInk,
                     ),
                   ),
                 ),
@@ -468,28 +434,80 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildSwitchTile({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color iconColor,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return SwitchListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      secondary: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(99),
+          color: iconColor,
+          border: Border.all(color: kInk, width: 2.0),
+        ),
+        child: Icon(icon, color: kInk, size: 22),
+      ),
+      title: Text(
+        title,
+        style: GoogleFonts.dmSans(
+          fontSize: 15,
+          fontWeight: FontWeight.w700,
+          color: kInk,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: GoogleFonts.dmSans(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: kInkDim,
+        ),
+      ),
+      value: value,
+      activeThumbColor: kInk,
+      activeTrackColor: kLime,
+      inactiveThumbColor: kInkDim,
+      inactiveTrackColor: Colors.white,
+      trackOutlineColor: WidgetStateProperty.all(kInk),
+      onChanged: onChanged,
+    );
+  }
+
   void _confirmClearHistory(BuildContext context) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: appBgMid,
+        backgroundColor: kInk,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(appRadius),
-          side: const BorderSide(color: appLine, width: 0.8),
+          borderRadius: kAsymmetricRadius,
+          side: const BorderSide(color: kCream, width: 3.5),
         ),
         title: Text(
           'Clear History?',
-          style: appFont(18, weight: FontWeight.w600, color: appText),
+          style: GoogleFonts.bowlbyOne(fontSize: 22, color: kYellow),
         ),
         content: Text(
-          'All your previous round records will be removed.',
-          style: appFont(14, color: appTextDim),
+          'All your previous round records will be removed permanently.',
+          style: GoogleFonts.dmSans(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: kCream,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('CANCEL',
-                style: appFont(13, color: appTextDim, spacing: 0.5)),
+            child: Text(
+              'CANCEL',
+              style: GoogleFonts.bowlbyOne(fontSize: 13, color: kCream),
+            ),
           ),
           GestureDetector(
             onTap: () {
@@ -500,14 +518,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: appPass.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(appRadius),
-                border: Border.all(color: appPass, width: 0.8),
+                color: kOrange,
+                borderRadius: BorderRadius.circular(99),
+                border: Border.all(color: kInk, width: 2.0),
+                boxShadow: kSmallShadow,
               ),
               child: Text(
                 'CLEAR',
-                style: appFont(13,
-                    weight: FontWeight.w600, color: appPass, spacing: 0.5),
+                style: GoogleFonts.bowlbyOne(fontSize: 13, color: kInk),
               ),
             ),
           ),
@@ -520,24 +538,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: appBgMid,
+        backgroundColor: kInk,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(appRadius),
-          side: const BorderSide(color: appLine, width: 0.8),
+          borderRadius: kAsymmetricRadius,
+          side: const BorderSide(color: kCream, width: 3.5),
         ),
         title: Text(
-          'Reset All Data & Stats?',
-          style: appFont(18, weight: FontWeight.w600, color: appPass),
+          'Reset All Data?',
+          style: GoogleFonts.bowlbyOne(fontSize: 22, color: kPink),
         ),
         content: Text(
           'This will permanently delete all custom decks, favorites, and round history, and restore default settings.',
-          style: appFont(14, color: appTextDim, height: 1.4),
+          style: GoogleFonts.dmSans(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: kCream,
+            height: 1.4,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('CANCEL',
-                style: appFont(13, color: appTextDim, spacing: 0.5)),
+            child: Text(
+              'CANCEL',
+              style: GoogleFonts.bowlbyOne(fontSize: 13, color: kCream),
+            ),
           ),
           GestureDetector(
             onTap: () async {
@@ -549,28 +574,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('All data has been reset to defaults.',
-                      style: appFont(14, color: appText)),
+                  content: Text(
+                    'All data has been reset to defaults.',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: kInk,
+                    ),
+                  ),
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(appRadius),
-                    side: const BorderSide(color: appLine, width: 0.8),
+                    borderRadius: BorderRadius.circular(99),
+                    side: const BorderSide(color: kInk, width: 2.0),
                   ),
-                  backgroundColor: appBgMid,
+                  backgroundColor: kYellow,
                 ),
               );
             },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: appPass.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(appRadius),
-                border: Border.all(color: appPass, width: 0.8),
+                color: kPink,
+                borderRadius: BorderRadius.circular(99),
+                border: Border.all(color: kInk, width: 2.0),
+                boxShadow: kSmallShadow,
               ),
               child: Text(
                 'RESET EVERYTHING',
-                style: appFont(13,
-                    weight: FontWeight.w600, color: appPass, spacing: 0.5),
+                style: GoogleFonts.bowlbyOne(fontSize: 13, color: kInk),
               ),
             ),
           ),

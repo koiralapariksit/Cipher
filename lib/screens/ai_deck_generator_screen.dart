@@ -1,8 +1,10 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/deck.dart';
 import '../services/groq_deck_service.dart';
-import '../theme/app_theme.dart';
+import '../theme/deck_colors.dart';
 import 'gameplay_screen.dart';
 
 class AiDeckGeneratorScreen extends StatefulWidget {
@@ -65,7 +67,7 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     )..repeat(reverse: true);
-    _pulseAnimation = Tween<double>(begin: 0.55, end: 1.0).animate(
+    _pulseAnimation = Tween<double>(begin: 0.7, end: 1.0).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
@@ -98,13 +100,18 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
         SnackBar(
           content: Text(
             'Please enter a topic or pick a suggestion.',
-            style: appFont(14, color: appText),
+            style: GoogleFonts.dmSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: kInk,
+            ),
           ),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(appRadius),
+            borderRadius: BorderRadius.circular(99),
+            side: const BorderSide(color: kInk, width: 2.0),
           ),
-          backgroundColor: appBgMid,
+          backgroundColor: kYellow,
         ),
       );
       return;
@@ -150,17 +157,22 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
         SnackBar(
           content: Text(
             errorMessage,
-            style: appFont(13, color: appText),
+            style: GoogleFonts.dmSans(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: kInk,
+            ),
           ),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(appRadius),
+            borderRadius: BorderRadius.circular(99),
+            side: const BorderSide(color: kInk, width: 2.0),
           ),
-          backgroundColor: appBgMid,
+          backgroundColor: kOrange,
           duration: const Duration(seconds: 4),
           action: SnackBarAction(
             label: 'API Key',
-            textColor: appCorrect,
+            textColor: kInk,
             onPressed: _showApiKeyDialog,
           ),
         ),
@@ -178,14 +190,14 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: appBgMid,
+        backgroundColor: kInk,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(appRadius),
-          side: const BorderSide(color: appLine, width: 0.8),
+          borderRadius: kAsymmetricRadius,
+          side: const BorderSide(color: kCream, width: 3.5),
         ),
         title: Text(
           'Groq API Key',
-          style: appFont(16, weight: FontWeight.w700),
+          style: GoogleFonts.bowlbyOne(fontSize: 20, color: kYellow),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -193,22 +205,36 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
           children: [
             Text(
               'Key is loaded automatically from .env. You can also override or update it here:',
-              style: appFont(12, color: appTextDim, height: 1.35),
+              style: GoogleFonts.dmSans(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: kCream,
+                height: 1.35,
+              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Container(
-              decoration: appFieldBox(),
-              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: kCream,
+                borderRadius: BorderRadius.circular(99),
+                border: Border.all(color: kInk, width: 2.0),
+                boxShadow: kSmallShadow,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
               child: TextField(
                 controller: controller,
                 enableSuggestions: false,
                 autocorrect: false,
-                style: appFont(13),
-                cursorColor: appText,
+                style: GoogleFonts.dmSans(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: kInk,
+                ),
+                cursorColor: kInk,
                 obscureText: true,
                 decoration: InputDecoration(
                   hintText: 'gsk_...',
-                  hintStyle: appFont(13, color: appTextDim),
+                  hintStyle: GoogleFonts.dmSans(fontSize: 13, color: kInkDim),
                   border: InputBorder.none,
                 ),
               ),
@@ -218,26 +244,49 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('Cancel', style: appFont(13, color: appTextDim)),
+            child: Text(
+              'CANCEL',
+              style: GoogleFonts.bowlbyOne(fontSize: 13, color: kCream),
+            ),
           ),
-          TextButton(
-            onPressed: () async {
+          GestureDetector(
+            onTap: () async {
               await _groqService.saveApiKey(controller.text.trim());
               if (ctx.mounted) Navigator.of(ctx).pop();
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Groq API Key updated successfully.',
-                        style: appFont(13, color: appText)),
+                    content: Text(
+                      'Groq API Key updated successfully.',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: kInk,
+                      ),
+                    ),
                     behavior: SnackBarBehavior.floating,
-                    backgroundColor: appBgMid,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(99),
+                      side: const BorderSide(color: kInk, width: 2.0),
+                    ),
+                    backgroundColor: kLime,
                   ),
                 );
               }
             },
-            child: Text('Save Key',
-                style: appFont(13,
-                    weight: FontWeight.w700, color: appCorrect)),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: kLime,
+                borderRadius: BorderRadius.circular(99),
+                border: Border.all(color: kInk, width: 2.0),
+                boxShadow: kSmallShadow,
+              ),
+              child: Text(
+                'SAVE KEY',
+                style: GoogleFonts.bowlbyOne(fontSize: 13, color: kInk),
+              ),
+            ),
           ),
         ],
       ),
@@ -248,12 +297,12 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
   void _showDeckSuccessModal(Deck deck) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: appBgMid,
+      backgroundColor: kInk,
       isDismissible: false,
       enableDrag: false,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(appRadius * 3)),
-        side: BorderSide(color: appLine, width: 0.8),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        side: BorderSide(color: kCream, width: 3.5),
       ),
       builder: (ctx) => SafeArea(
         child: Padding(
@@ -263,19 +312,26 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
             children: [
               Text(
                 deck.emoji,
-                style: const TextStyle(fontSize: 44),
+                style: const TextStyle(fontSize: 48),
               ),
               const SizedBox(height: 10),
               Text(
                 '${deck.name} Encrypted!',
                 textAlign: TextAlign.center,
-                style: appFont(20, weight: FontWeight.w700, spacing: -0.4),
+                style: GoogleFonts.bowlbyOne(
+                  fontSize: 22,
+                  color: kYellow,
+                ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Text(
                 '${deck.items.length} cards sealed into your library with zero spoilers.',
                 textAlign: TextAlign.center,
-                style: appFont(13, color: appTextDim),
+                style: GoogleFonts.dmSans(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: kCream,
+                ),
               ),
               const SizedBox(height: 24),
 
@@ -296,21 +352,27 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
                   width: double.infinity,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: appText,
-                    borderRadius: BorderRadius.circular(appRadius),
+                    color: kLime,
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(color: kInk, width: 2.5),
+                    boxShadow: const [
+                      BoxShadow(
+                          color: kInk, offset: Offset(4, 4), blurRadius: 0),
+                    ],
                   ),
                   alignment: Alignment.center,
                   child: Text(
                     'PLAY THIS DECK NOW',
-                    style: appFont(13,
-                        weight: FontWeight.w700,
-                        spacing: 0.8,
-                        color: appBgBottom),
+                    style: GoogleFonts.bowlbyOne(
+                      fontSize: 14,
+                      color: kInk,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                 ),
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
 
               // Action 2: Back to Library
               GestureDetector(
@@ -322,15 +384,18 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
                   width: double.infinity,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: appTile,
-                    borderRadius: BorderRadius.circular(appRadius),
-                    border: Border.all(color: appLine, width: 0.8),
+                    color: kCream,
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(color: kInk, width: 2.0),
+                    boxShadow: kSmallShadow,
                   ),
                   alignment: Alignment.center,
                   child: Text(
                     'DONE · BACK TO DECKS',
-                    style: appFont(13,
-                        weight: FontWeight.w600, color: appText),
+                    style: GoogleFonts.bowlbyOne(
+                      fontSize: 13,
+                      color: kInk,
+                    ),
                   ),
                 ),
               ),
@@ -346,483 +411,578 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: appBgBottom,
-        body: Container(
-          decoration: appBackgroundDecoration,
-          child: SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Navigation Header
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                  child: Row(
-                    children: [
-                      AppIconButton(
-                        icon: Icons.arrow_back_rounded,
-                        tooltip: 'Back',
-                        size: 40,
-                        onTap: () => Navigator.of(context).pop(),
+        backgroundColor: kBlue,
+        body: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Custom Neo-Brutalist Header ──
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: kInk,
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(color: kInk, width: 2.0),
+                          boxShadow: kSmallShadow,
+                        ),
+                        child: Text(
+                          '✕ BACK',
+                          style: GoogleFonts.bowlbyOne(
+                            fontSize: 13,
+                            color: kCream,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
                       ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    ),
+                    const SizedBox(width: 12),
+                    Transform.rotate(
+                      angle: -2 * math.pi / 180,
+                      child: RichText(
+                        text: TextSpan(
                           children: [
-                            Text(
-                              'AI Deck Generator',
-                              style: appFont(22,
-                                  weight: FontWeight.w700, spacing: -0.6),
+                            TextSpan(
+                              text: 'AI Generator',
+                              style: GoogleFonts.bowlbyOne(
+                                fontSize: 28,
+                                color: kCream,
+                                height: 0.95,
+                              ),
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'GROQ LLM · LIVE WEB GROUNDING',
-                              style: appFont(10,
-                                  weight: FontWeight.w600,
-                                  spacing: 1.1,
-                                  color: appTextDim),
+                            TextSpan(
+                              text: '!',
+                              style: GoogleFonts.bowlbyOne(
+                                fontSize: 28,
+                                color: kYellow,
+                                height: 0.95,
+                              ),
                             ),
                           ],
                         ),
                       ),
-                      AppIconButton(
-                        icon: Icons.key_outlined,
-                        tooltip: 'Groq API Key',
-                        size: 38,
-                        onTap: _showApiKeyDialog,
+                    ),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: _showApiKeyDialog,
+                      child: Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: kYellow,
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(color: kInk, width: 2.0),
+                          boxShadow: kSmallShadow,
+                        ),
+                        child: const Icon(Icons.key_outlined,
+                            size: 20, color: kInk),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
+              ),
 
-                const SizedBox(height: 12),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 20, vertical: 10),
+                  children: [
+                    // Section 1: Topic Input
+                    _buildSectionHeader('DECK TOPIC', kYellow),
+                    const SizedBox(height: 8),
 
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 12),
-                    children: [
-                      // Section 1: Topic Input
-                      const AppSectionHeader(
-                        title: 'Deck Topic',
-                        trailing: 'Instant Synthesis',
+                    // Input Box
+                    Container(
+                      height: 54,
+                      decoration: BoxDecoration(
+                        color: kCream,
+                        borderRadius: kAsymmetricRadius,
+                        border: Border.all(color: kInk, width: 2.5),
+                        boxShadow: kHardShadow,
                       ),
-                      const SizedBox(height: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.auto_awesome,
+                            color: kInk,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              controller: _topicController,
+                              enabled: !_isGenerating,
+                              enableSuggestions: false,
+                              autocorrect: false,
+                              style: GoogleFonts.dmSans(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: kInk,
+                              ),
+                              cursorColor: kInk,
+                              decoration: InputDecoration(
+                                hintText:
+                                    'e.g. 90s Rock Bands, Sci-Fi Movies...',
+                                hintStyle: GoogleFonts.dmSans(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: kInkDim,
+                                ),
+                                border: InputBorder.none,
+                                isDense: true,
+                              ),
+                            ),
+                          ),
+                          if (_topicController.text.isNotEmpty &&
+                              !_isGenerating)
+                            GestureDetector(
+                              onTap: () {
+                                _topicController.clear();
+                                HapticFeedback.selectionClick();
+                              },
+                              behavior: HitTestBehavior.opaque,
+                              child: Container(
+                                width: 26,
+                                height: 26,
+                                decoration: BoxDecoration(
+                                  color: kPink,
+                                  borderRadius: BorderRadius.circular(99),
+                                  border: Border.all(color: kInk, width: 1.5),
+                                ),
+                                child: const Icon(
+                                  Icons.close_rounded,
+                                  color: kInk,
+                                  size: 16,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
 
-                      // Input Box
-                      Container(
-                        height: 52,
-                        decoration: appFieldBox(),
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.auto_awesome,
-                              color: appTextDim,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: TextField(
-                                controller: _topicController,
-                                enabled: !_isGenerating,
-                                enableSuggestions: false,
-                                autocorrect: false,
-                                style: appFont(15, weight: FontWeight.w500),
-                                cursorColor: appText,
-                                decoration: InputDecoration(
-                                  hintText: 'e.g. 90s Rock Bands, Sci-Fi Movies...',
-                                  hintStyle: appFont(14, color: appTextDim),
-                                  border: InputBorder.none,
-                                  isDense: true,
+                    const SizedBox(height: 14),
+
+                    // Quick-select suggestions
+                    Text(
+                      'QUICK SUGGESTIONS',
+                      style: GoogleFonts.bowlbyOne(
+                        fontSize: 11,
+                        color: kCream,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    SizedBox(
+                      height: 38,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: _suggestions.length,
+                        separatorBuilder: (_, _) => const SizedBox(width: 8),
+                        itemBuilder: (context, index) {
+                          final topic = _suggestions[index];
+                          final isSelected =
+                              _topicController.text.trim().toLowerCase() ==
+                                  topic.toLowerCase();
+                          return GestureDetector(
+                            onTap: _isGenerating
+                                ? null
+                                : () => _selectSuggestion(topic),
+                            child: Container(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 14),
+                              decoration: BoxDecoration(
+                                color: isSelected ? kYellow : kCream,
+                                borderRadius: BorderRadius.circular(99),
+                                border: Border.all(color: kInk, width: 2.0),
+                                boxShadow: isSelected ? kSmallShadow : null,
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                topic,
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: kInk,
                                 ),
                               ),
                             ),
-                            if (_topicController.text.isNotEmpty && !_isGenerating)
-                              GestureDetector(
-                                onTap: () {
-                                  _topicController.clear();
-                                  HapticFeedback.selectionClick();
-                                },
-                                behavior: HitTestBehavior.opaque,
-                                child: const Padding(
-                                  padding: EdgeInsets.all(4),
-                                  child: Icon(
-                                    Icons.close_rounded,
-                                    color: appTextDim,
-                                    size: 16,
-                                  ),
-                                ),
-                              ),
-                          ],
+                          );
+                        },
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Section 2: Customization Controls
+                    _buildSectionHeader('PARAMETERS', kLime),
+                    const SizedBox(height: 12),
+
+                    // Card Count Selector
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'CARD COUNT',
+                          style: GoogleFonts.bowlbyOne(
+                            fontSize: 11,
+                            color: kCream,
+                            letterSpacing: 0.5,
+                          ),
                         ),
-                      ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: kYellow,
+                            borderRadius: BorderRadius.circular(99),
+                            border: Border.all(color: kInk, width: 1.5),
+                          ),
+                          child: Text(
+                            '$_selectedCardCount Cards',
+                            style: GoogleFonts.bowlbyOne(
+                              fontSize: 11,
+                              color: kInk,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
 
-                      const SizedBox(height: 12),
-
-                      // Quick-select suggestions
-                      Text(
-                        'QUICK SUGGESTIONS',
-                        style: appFont(10,
-                            weight: FontWeight.w600,
-                            spacing: 1.0,
-                            color: appTextDim),
-                      ),
-                      const SizedBox(height: 8),
-
-                      SizedBox(
-                        height: 34,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          physics: const BouncingScrollPhysics(),
-                          itemCount: _suggestions.length,
-                          separatorBuilder: (_, _) => const SizedBox(width: 8),
-                          itemBuilder: (context, index) {
-                            final topic = _suggestions[index];
-                            final isSelected =
-                                _topicController.text.trim().toLowerCase() ==
-                                    topic.toLowerCase();
-                            return GestureDetector(
+                    Row(
+                      children: _cardCounts.map((count) {
+                        final isSelected = _selectedCardCount == count;
+                        return Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: GestureDetector(
                               onTap: _isGenerating
                                   ? null
-                                  : () => _selectSuggestion(topic),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 180),
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 12),
+                                  : () {
+                                      HapticFeedback.selectionClick();
+                                      setState(
+                                          () => _selectedCardCount = count);
+                                    },
+                              child: Container(
+                                height: 42,
                                 decoration: BoxDecoration(
-                                  color: isSelected ? appText : appTile,
-                                  borderRadius:
-                                      BorderRadius.circular(appRadius),
-                                  border: Border.all(
-                                    color: isSelected ? appText : appLine,
-                                    width: 0.8,
-                                  ),
+                                  color: isSelected ? kYellow : kCream,
+                                  borderRadius: BorderRadius.circular(99),
+                                  border: Border.all(color: kInk, width: 2.0),
+                                  boxShadow: isSelected ? kSmallShadow : null,
                                 ),
                                 alignment: Alignment.center,
                                 child: Text(
-                                  topic,
-                                  style: appFont(
-                                    12,
-                                    weight: isSelected
-                                        ? FontWeight.w700
-                                        : FontWeight.w500,
-                                    color:
-                                        isSelected ? appBgBottom : appText,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Section 2: Customization Controls
-                      const AppSectionHeader(
-                        title: 'Parameters',
-                        trailing: 'Card Tuning',
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Card Count Selector
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'CARD COUNT',
-                            style: appFont(11,
-                                weight: FontWeight.w600,
-                                spacing: 1.0,
-                                color: appTextDim),
-                          ),
-                          Text(
-                            '$_selectedCardCount Cards',
-                            style: appFont(12,
-                                weight: FontWeight.w700, color: appText),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-
-                      Row(
-                        children: _cardCounts.map((count) {
-                          final isSelected = _selectedCardCount == count;
-                          return Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 3),
-                              child: GestureDetector(
-                                onTap: _isGenerating
-                                    ? null
-                                    : () {
-                                        HapticFeedback.selectionClick();
-                                        setState(() => _selectedCardCount = count);
-                                      },
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 180),
-                                  height: 42,
-                                  decoration: BoxDecoration(
-                                    color: isSelected ? appText : appTile,
-                                    borderRadius:
-                                        BorderRadius.circular(appRadius),
-                                    border: Border.all(
-                                      color: isSelected ? appText : appLine,
-                                      width: 0.8,
-                                    ),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    '$count',
-                                    style: appFont(
-                                      14,
-                                      weight: isSelected
-                                          ? FontWeight.w700
-                                          : FontWeight.w500,
-                                      color:
-                                          isSelected ? appBgBottom : appText,
-                                    ),
+                                  '$count',
+                                  style: GoogleFonts.bowlbyOne(
+                                    fontSize: 14,
+                                    color: kInk,
                                   ),
                                 ),
                               ),
                             ),
-                          );
-                        }).toList(),
-                      ),
-
-                      const SizedBox(height: 18),
-
-                      // Vibe / Difficulty Selector
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'VIBE & DIFFICULTY',
-                            style: appFont(11,
-                                weight: FontWeight.w600,
-                                spacing: 1.0,
-                                color: appTextDim),
                           ),
-                          Text(
+                        );
+                      }).toList(),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Vibe / Difficulty Selector
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'VIBE & DIFFICULTY',
+                          style: GoogleFonts.bowlbyOne(
+                            fontSize: 11,
+                            color: kCream,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: kLime,
+                            borderRadius: BorderRadius.circular(99),
+                            border: Border.all(color: kInk, width: 1.5),
+                          ),
+                          child: Text(
                             _selectedVibe,
-                            style: appFont(12,
-                                weight: FontWeight.w700, color: appText),
+                            style: GoogleFonts.bowlbyOne(
+                              fontSize: 11,
+                              color: kInk,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    Row(
+                      children: _vibes.map((vibe) {
+                        final isSelected = _selectedVibe == vibe.label;
+                        return Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: GestureDetector(
+                              onTap: _isGenerating
+                                  ? null
+                                  : () {
+                                      HapticFeedback.selectionClick();
+                                      setState(
+                                          () => _selectedVibe = vibe.label);
+                                    },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 12, horizontal: 8),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? kLime : kCream,
+                                  borderRadius: kAsymmetricRadius,
+                                  border: Border.all(
+                                    color: kInk,
+                                    width: isSelected ? 3.0 : 2.0,
+                                  ),
+                                  boxShadow: isSelected ? kSmallShadow : null,
+                                ),
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      vibe.icon,
+                                      size: 22,
+                                      color: kInk,
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      vibe.label,
+                                      style: GoogleFonts.bowlbyOne(
+                                        fontSize: 12,
+                                        color: kInk,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      vibe.subtitle,
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: kInkDim,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Anti-Spoiler Privacy Seal Notice
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: kCream,
+                        borderRadius: kAsymmetricRadius,
+                        border: Border.all(color: kInk, width: 2.5),
+                        boxShadow: kSmallShadow,
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: kYellow,
+                              borderRadius: BorderRadius.circular(99),
+                              border: Border.all(color: kInk, width: 1.5),
+                            ),
+                            child: const Icon(
+                              Icons.shield_outlined,
+                              color: kInk,
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Zero-Spoiler Guarantee',
+                                  style: GoogleFonts.bowlbyOne(
+                                    fontSize: 13,
+                                    color: kInk,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  'Cards are synthesized and encrypted directly into your local library. The player holding the phone never sees the wordlist beforehand.',
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: kInkDim,
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                    ),
 
-                      Row(
-                        children: _vibes.map((vibe) {
-                          final isSelected = _selectedVibe == vibe.label;
-                          return Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 3),
-                              child: GestureDetector(
-                                onTap: _isGenerating
-                                    ? null
-                                    : () {
-                                        HapticFeedback.selectionClick();
-                                        setState(() => _selectedVibe = vibe.label);
-                                      },
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 180),
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 10, horizontal: 8),
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? appTile.withValues(alpha: 0.22)
-                                        : appTile,
-                                    borderRadius:
-                                        BorderRadius.circular(appRadius),
-                                    border: Border.all(
-                                      color: isSelected ? appText : appLine,
-                                      width: isSelected ? 1.2 : 0.8,
+                    const SizedBox(height: 28),
+
+                    // Primary Action / Animated Loading State
+                    if (!_isGenerating)
+                      GestureDetector(
+                        onTap: _onGenerateDeckPressed,
+                        child: Container(
+                          width: double.infinity,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: kLime,
+                            borderRadius: BorderRadius.circular(99),
+                            border: Border.all(color: kInk, width: 2.5),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: kInk,
+                                offset: Offset(4, 4),
+                                blurRadius: 0,
+                              ),
+                            ],
+                          ),
+                          alignment: Alignment.center,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.bolt_rounded,
+                                color: kInk,
+                                size: 22,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'GENERATE CIPHER DECK',
+                                style: GoogleFonts.bowlbyOne(
+                                  fontSize: 15,
+                                  color: kInk,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      FadeTransition(
+                        opacity: _pulseAnimation,
+                        child: Container(
+                          width: double.infinity,
+                          height: 60,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: kInk,
+                            borderRadius: kAsymmetricRadius,
+                            border: Border.all(
+                              color: kCream,
+                              width: 3.0,
+                            ),
+                            boxShadow: kCardShadow,
+                          ),
+                          child: Row(
+                            children: [
+                              const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 3,
+                                  valueColor:
+                                      AlwaysStoppedAnimation<Color>(kYellow),
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _loadingMessage.toUpperCase(),
+                                      style: GoogleFonts.bowlbyOne(
+                                        fontSize: 12,
+                                        color: kYellow,
+                                        letterSpacing: 0.5,
+                                      ),
                                     ),
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      Icon(
-                                        vibe.icon,
-                                        size: 18,
-                                        color:
-                                            isSelected ? appText : appTextDim,
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Synthesizing & concealing words...',
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: kCream,
                                       ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        vibe.label,
-                                        style: appFont(12,
-                                            weight: isSelected
-                                                ? FontWeight.w700
-                                                : FontWeight.w500,
-                                            color: isSelected
-                                                ? appText
-                                                : appTextDim),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        vibe.subtitle,
-                                        textAlign: TextAlign.center,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: appFont(9,
-                                            color: appTextDim.withValues(
-                                                alpha: 0.8)),
-                                      ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Anti-Spoiler Privacy Seal Notice
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: appTileBox(
-                          color: appTile.withValues(alpha: 0.08),
-                          borderColor: appLine,
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Padding(
-                              padding: EdgeInsets.only(top: 1),
-                              child: Icon(
-                                Icons.shield_outlined,
-                                color: appTextDim,
-                                size: 16,
+                              const Icon(
+                                Icons.lock_outline_rounded,
+                                color: kYellow,
+                                size: 20,
                               ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Zero-Spoiler Guarantee',
-                                    style: appFont(12,
-                                        weight: FontWeight.w600,
-                                        color: appText),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Cards are synthesized and encrypted directly into your local library. The player holding the phone never sees the wordlist beforehand.',
-                                    style: appFont(11,
-                                        color: appTextDim, height: 1.35),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
 
-                      const SizedBox(height: 28),
-
-                      // Primary Action / Animated Loading State
-                      if (!_isGenerating)
-                        GestureDetector(
-                          onTap: _onGenerateDeckPressed,
-                          child: Container(
-                            width: double.infinity,
-                            height: 50,
-                            decoration: BoxDecoration(
-                              color: appText,
-                              borderRadius:
-                                  BorderRadius.circular(appRadius),
-                            ),
-                            alignment: Alignment.center,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.bolt_rounded,
-                                  color: appBgBottom,
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'GENERATE CIPHER DECK',
-                                  style: appFont(13,
-                                      weight: FontWeight.w700,
-                                      spacing: 0.8,
-                                      color: appBgBottom),
-                                ),
-                              ],
-                            ),
-                          ),
-                        )
-                      else
-                        FadeTransition(
-                          opacity: _pulseAnimation,
-                          child: Container(
-                            width: double.infinity,
-                            height: 56,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            decoration: BoxDecoration(
-                              color: appTile,
-                              borderRadius:
-                                  BorderRadius.circular(appRadius),
-                              border: Border.all(
-                                color: appText,
-                                width: 1.0,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor:
-                                        AlwaysStoppedAnimation<Color>(appText),
-                                  ),
-                                ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        _loadingMessage.toUpperCase(),
-                                        style: appFont(11,
-                                            weight: FontWeight.w700,
-                                            spacing: 0.8,
-                                            color: appText),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        'Synthesizing & concealing words...',
-                                        style: appFont(10,
-                                            color: appTextDim),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const Icon(
-                                  Icons.lock_outline_rounded,
-                                  color: appTextDim,
-                                  size: 16,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                      const SizedBox(height: 20),
-                    ],
-                  ),
+                    const SizedBox(height: 24),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, Color badgeColor) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: badgeColor,
+          borderRadius: BorderRadius.circular(99),
+          border: Border.all(color: kInk, width: 2.0),
+          boxShadow: kSmallShadow,
+        ),
+        child: Text(
+          title,
+          style: GoogleFonts.bowlbyOne(
+            fontSize: 12,
+            color: kInk,
+            letterSpacing: 0.5,
           ),
         ),
       ),
