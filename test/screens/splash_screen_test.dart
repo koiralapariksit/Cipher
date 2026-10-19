@@ -28,15 +28,11 @@ void main() {
     expect(find.text('Warming up the party decks...'), findsOneWidget);
     expect(find.text('0%'), findsNWidgets(3));
 
-    // Advance past post-frame warmup gate (150ms timeout + 400ms settle delay = 550ms)
-    await tester.pump(const Duration(milliseconds: 600));
-    expect(find.byType(SplashScreen), findsOneWidget);
-
     // Advance halfway through the 3600ms progress duration (+1800ms = 50%)
     await tester.pump(const Duration(milliseconds: 1800));
     expect(find.text('50%'), findsNWidgets(3));
 
-    // Advance to 100% completion (+1800ms)
+    // Advance to 100% completion (+1800ms = 3600ms total)
     await tester.pump(const Duration(milliseconds: 1800));
     expect(find.text('100%'), findsNWidgets(3));
     expect(find.text("Let's Go!"), findsOneWidget);
@@ -44,11 +40,8 @@ void main() {
     // Advance past 450ms hold delay at 100%
     await tester.pump(const Duration(milliseconds: 500));
 
-    // Trigger route transition frame
-    await tester.pump(const Duration(milliseconds: 50));
-
     // Complete the 400ms fade transition
-    await tester.pump(const Duration(milliseconds: 450));
+    await tester.pump(const Duration(milliseconds: 500));
 
     // Verify transition to HomeScreen
     expect(find.byType(HomeScreen, skipOffstage: false), findsOneWidget);

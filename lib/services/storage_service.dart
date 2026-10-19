@@ -83,12 +83,14 @@ class StorageService with ChangeNotifier {
 
   static const String _keyCustomDecks = 'custom_decks_v2';
   static const String _keySettings = 'app_settings_v2';
+  static const String _keyPinned = 'pinned_deck_ids_v2';
   static const String _keyFavorites = 'favorite_deck_ids_v2';
   static const String _keyHistory = 'round_history_v2';
 
   SharedPreferences? _prefs;
 
   List<Deck> _customDecks = [];
+  Set<String> _pinnedDeckIds = {};
   Set<String> _favoriteDeckIds = {};
   List<GameRound> _roundHistory = [];
   AppSettings _settings = const AppSettings();
@@ -97,6 +99,7 @@ class StorageService with ChangeNotifier {
   bool get isInitialized => _initialized;
 
   List<Deck> get customDecks => List.unmodifiable(_customDecks);
+  Set<String> get pinnedDeckIds => Set.unmodifiable(_pinnedDeckIds);
   Set<String> get favoriteDeckIds => Set.unmodifiable(_favoriteDeckIds);
   List<GameRound> get roundHistory => List.unmodifiable(_roundHistory);
   AppSettings get settings => _settings;
@@ -132,10 +135,21 @@ class StorageService with ChangeNotifier {
       }).whereType<Deck>().toList();
     }
 
-    // 3. Favorites (Max 2 pinned decks)
+    // 3a. Pinned Decks (Strict Max 2)
+    final pinnedList = _prefs?.getStringList(_keyPinned);
+    if (pinnedList != null) {
+      _pinnedDeckIds = pinnedList.take(2).toSet();
+    } else {
+      final legacyFavs = _prefs?.getStringList(_keyFavorites);
+      if (legacyFavs != null && legacyFavs.isNotEmpty) {
+        _pinnedDeckIds = legacyFavs.take(2).toSet();
+      }
+    }
+
+    // 3b. Favorites (Unlimited)
     final favoritesList = _prefs?.getStringList(_keyFavorites);
     if (favoritesList != null) {
-      _favoriteDeckIds = favoritesList.take(2).toSet();
+      _favoriteDeckIds = favoritesList.toSet();
     }
 
     // 4. History
@@ -181,8 +195,10 @@ class StorageService with ChangeNotifier {
 
   Future<void> deleteDeck(String deckId) async {
     _customDecks.removeWhere((d) => d.id == deckId);
+    _pinnedDeckIds.remove(deckId);
     _favoriteDeckIds.remove(deckId);
     await _persistCustomDecks();
+    await _persistPinned();
     await _persistFavorites();
     notifyListeners();
   }
@@ -192,32 +208,77 @@ class StorageService with ChangeNotifier {
     await _prefs?.setStringList(_keyCustomDecks, list);
   }
 
-  // ── Favorites (Strict Max 2 Pinned) ────────────────────────────────────
+  // ── Pinned Decks (Strict Max 2 Pinned) ──────────────────────────────────
 
-  bool isFavorite(String deckId) => _favoriteDeckIds.contains(deckId);
+  bool isPinned(String deckId) => _pinnedDeckIds.contains(deckId);
 
-  /// Toggles favorite status for [deckId].
+  /// Toggles pinned status for [deckId].
   /// Returns `true` if pinned/unpinned successfully.
   /// Returns `false` if pinning is blocked because 2 decks are already pinned.
-  Future<bool> toggleFavorite(String deckId) async {
-    if (_favoriteDeckIds.contains(deckId)) {
-      _favoriteDeckIds.remove(deckId);
-      await _persistFavorites();
+  Future<bool> togglePin(String deckId) async {
+    if (_pinnedDeckIds.contains(deckId)) {
+      _pinnedDeckIds.remove(deckId);
+      await _persistPinned();
       notifyListeners();
       return true;
     } else {
-      if (_favoriteDeckIds.length >= 2) {
+      if (_pinnedDeckIds.length >= 2) {
         return false;
       }
-      _favoriteDeckIds.add(deckId);
-      await _persistFavorites();
+      _pinnedDeckIds.add(deckId);
+      await _persistPinned();
       notifyListeners();
       return true;
     }
   }
 
+  Future<void> _persistPinned() async {
+    await _prefs?.setStringList(_keyPinned, _pinnedDeckIds.toList());
+  }
+
+  // ── Favorites (Unlimited) ──────────────────────────────────────────────
+
+  bool isFavorite(String deckId) => _favoriteDeckIds.contains(deckId);
+
+  /// Toggles favorite status for [deckId].
+  Future<bool> toggleFavorite(String deckId) async {
+    if (_favoriteDeckIds.contains(deckId)) {
+      _favoriteDeckIds.remove(deckId);
+    } else {
+      _favoriteDeckIds.add(deckId);
+    }
+    await _persistFavorites();
+    notifyListeners();
+    return true;
+  }
+
   Future<void> _persistFavorites() async {
     await _prefs?.setStringList(_keyFavorites, _favoriteDeckIds.toList());
+  }
+
+  // ── Priority Sorting ───────────────────────────────────────────────────
+
+  /// Sorts decks in the exact hierarchy:
+  /// - Priority 1: Pinned Decks (up to 2)
+  /// - Priority 2: Favorite Decks (non-pinned favorites)
+  /// - Priority 3: Standard/All other decks
+  /// Within each priority tier, decks are sorted alphabetically by name.
+  List<Deck> sortDecks(List<Deck> decks) {
+    final list = List<Deck>.from(decks);
+    list.sort((a, b) {
+      final aPinned = isPinned(a.id);
+      final bPinned = isPinned(b.id);
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+
+      final aFav = isFavorite(a.id);
+      final bFav = isFavorite(b.id);
+      if (aFav && !bFav) return -1;
+      if (!aFav && bFav) return 1;
+
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
+    return list;
   }
 
   // ── History & High Scores ──────────────────────────────────────────────

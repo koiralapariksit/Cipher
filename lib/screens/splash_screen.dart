@@ -56,20 +56,9 @@ class _SplashScreenState extends State<SplashScreen>
       }
     });
 
-    // 3. Post-frame warmup gate: render frame 1 sitting at 0% first, then warmup & start
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      try {
-        await Future.wait([
-          StorageService().init(),
-          GoogleFonts.pendingFonts(),
-        ]).timeout(const Duration(milliseconds: 150));
-      } catch (_) {}
-
-      // Settle delay so user clearly sees the splash screen rendered at 0%
-      await Future.delayed(const Duration(milliseconds: 400));
-      if (!mounted) return;
-      _progressController.forward(from: 0.0);
-    });
+    // 3. Start arcade progress counter immediately on frame 1 with zero startup stall
+    _progressController.forward(from: 0.0);
+    StorageService().init();
   }
 
   void _onProgressCompleted() {

@@ -14,8 +14,7 @@ void main() {
     await tester.pumpWidget(const CipherApp());
     expect(find.textContaining('Cipher'), findsWidgets);
 
-    // Pump through the warmup gate, 3600ms arcade progress, and transition to HomeScreen
-    await tester.pump(const Duration(milliseconds: 600));
+    // Pump through the 3600ms arcade progress, hold delay, and fade transition
     await tester.pump(const Duration(milliseconds: 3600));
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump(const Duration(milliseconds: 500));

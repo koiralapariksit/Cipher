@@ -86,57 +86,114 @@ void main() {
   });
 
   group('Strict Max-2 Pinned Decks Enforcement', () {
-    test('enforces max 2 pinned decks on toggleFavorite and init', () async {
+    test('enforces max 2 pinned decks on togglePin and init', () async {
       final storage = StorageService();
-      await storage.init();
+      await storage.init(force: true);
 
-      // Clear any favorites
-      for (final id in storage.favoriteDeckIds.toList()) {
-        await storage.toggleFavorite(id);
+      // Clear any pinned decks
+      for (final id in storage.pinnedDeckIds.toList()) {
+        await storage.togglePin(id);
       }
-      expect(storage.favoriteDeckIds, isEmpty);
+      expect(storage.pinnedDeckIds, isEmpty);
 
       // 1. Pin 1st deck
-      final res1 = await storage.toggleFavorite('animals');
+      final res1 = await storage.togglePin('animals');
       expect(res1, isTrue);
-      expect(storage.favoriteDeckIds.length, 1);
-      expect(storage.isFavorite('animals'), isTrue);
+      expect(storage.pinnedDeckIds.length, 1);
+      expect(storage.isPinned('animals'), isTrue);
 
       // 2. Pin 2nd deck
-      final res2 = await storage.toggleFavorite('movies_tv');
+      final res2 = await storage.togglePin('movies_tv');
       expect(res2, isTrue);
-      expect(storage.favoriteDeckIds.length, 2);
-      expect(storage.isFavorite('movies_tv'), isTrue);
+      expect(storage.pinnedDeckIds.length, 2);
+      expect(storage.isPinned('movies_tv'), isTrue);
 
       // 3. Attempt to pin 3rd deck -> must be rejected
-      final res3 = await storage.toggleFavorite('sports');
+      final res3 = await storage.togglePin('sports');
       expect(res3, isFalse);
-      expect(storage.favoriteDeckIds.length, 2);
-      expect(storage.isFavorite('sports'), isFalse);
+      expect(storage.pinnedDeckIds.length, 2);
+      expect(storage.isPinned('sports'), isFalse);
 
       // 4. Unpin animals -> succeeds
-      final res4 = await storage.toggleFavorite('animals');
+      final res4 = await storage.togglePin('animals');
       expect(res4, isTrue);
-      expect(storage.favoriteDeckIds.length, 1);
-      expect(storage.isFavorite('animals'), isFalse);
+      expect(storage.pinnedDeckIds.length, 1);
+      expect(storage.isPinned('animals'), isFalse);
 
       // 5. Pin sports now that a slot opened -> succeeds
-      final res5 = await storage.toggleFavorite('sports');
+      final res5 = await storage.togglePin('sports');
       expect(res5, isTrue);
-      expect(storage.favoriteDeckIds.length, 2);
-      expect(storage.isFavorite('sports'), isTrue);
+      expect(storage.pinnedDeckIds.length, 2);
+      expect(storage.isPinned('sports'), isTrue);
     });
 
-    test('truncates to max 2 favorites if legacy storage has > 2', () async {
+    test('truncates to max 2 pinned if storage has > 2', () async {
       SharedPreferences.setMockInitialValues({
-        'favorite_deck_ids_v2': ['animals', 'movies_tv', 'sports', 'food_drinks'],
+        'pinned_deck_ids_v2': ['animals', 'movies_tv', 'sports', 'food_drinks'],
       });
 
       final storage = StorageService();
       await storage.init(force: true);
 
-      expect(storage.favoriteDeckIds.length, 2);
-      expect(storage.favoriteDeckIds, containsAll(['animals', 'movies_tv']));
+      expect(storage.pinnedDeckIds.length, 2);
+      expect(storage.pinnedDeckIds, containsAll(['animals', 'movies_tv']));
+    });
+  });
+
+  group('Unlimited Favorites & 3-Tier Priority Sorting', () {
+    test('allows unlimited favorite decks', () async {
+      final storage = StorageService();
+      await storage.init(force: true);
+
+      // Clear favorites
+      for (final id in storage.favoriteDeckIds.toList()) {
+        await storage.toggleFavorite(id);
+      }
+      expect(storage.favoriteDeckIds, isEmpty);
+
+      // Add 4 favorites
+      expect(await storage.toggleFavorite('animals'), isTrue);
+      expect(await storage.toggleFavorite('movies_tv'), isTrue);
+      expect(await storage.toggleFavorite('sports'), isTrue);
+      expect(await storage.toggleFavorite('food_drinks'), isTrue);
+
+      expect(storage.favoriteDeckIds.length, 4);
+      expect(storage.isFavorite('food_drinks'), isTrue);
+    });
+
+    test('sortDecks orders: Pinned (Tier 1) -> Favorites (Tier 2) -> Standard (Tier 3)', () async {
+      final storage = StorageService();
+      await storage.init(force: true);
+
+      // Clear both sets
+      for (final id in storage.pinnedDeckIds.toList()) {
+        await storage.togglePin(id);
+      }
+      for (final id in storage.favoriteDeckIds.toList()) {
+        await storage.toggleFavorite(id);
+      }
+
+      // Pin 'sports' (Tier 1)
+      await storage.togglePin('sports');
+
+      // Favorite 'food_drinks' and 'animals' (Tier 2)
+      await storage.toggleFavorite('food_drinks');
+      await storage.toggleFavorite('animals');
+
+      // Standard remaining: 'celebrities', 'countries', 'movies_tv' (Tier 3)
+      final sorted = storage.sortDecks(Deck.starterDecks);
+
+      // Verify Tier 1: Pinned
+      expect(sorted[0].id, 'sports');
+
+      // Verify Tier 2: Favorites sorted alphabetically ('animals' before 'food_drinks')
+      expect(sorted[1].id, 'animals');
+      expect(sorted[2].id, 'food_drinks');
+
+      // Verify Tier 3: Standard sorted alphabetically ('celebrities', 'countries', 'movies_tv')
+      expect(sorted[3].id, 'celebrities');
+      expect(sorted[4].id, 'countries');
+      expect(sorted[5].id, 'movies_tv');
     });
   });
 }

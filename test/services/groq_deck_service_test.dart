@@ -45,7 +45,7 @@ void main() {
         targetCardCount: 25,
       );
 
-      expect(deck.name, 'Superconductors');
+      expect(deck.name, 'SUPERCONDUCTORS');
       expect(deck.emoji, '');
       expect(deck.items.length, greaterThanOrEqualTo(25));
       expect(deck.items, contains('Meissner Effect'));
@@ -70,6 +70,48 @@ void main() {
               !e.toString().contains('Groq')),
         ),
       );
+    });
+
+    test('parseAndBuildDeck summarizes long description into punchy 1-2 word uppercase title', () {
+      final service = GroqDeckService();
+      const rawJson = '''
+{
+  "name": "60s-90s pop song mainly mj qeen beatles",
+  "category": "Music",
+  "items": ["Billie Jean", "Bohemian Rhapsody", "Hey Jude", "Thriller", "Yesterday"]
+}
+''';
+      final deck = service.parseAndBuildDeck(
+        rawJson: rawJson,
+        fallbackTopic: '60s-90s pop song mainly mj qeen beatles',
+        targetCardCount: 25,
+      );
+
+      // Must be uppercase and at most 2 words
+      expect(deck.name, '60S-90S POP');
+      expect(deck.name.split(' ').length, lessThanOrEqualTo(2));
+      expect(deck.name, deck.name.toUpperCase());
+    });
+
+    test('parseAndBuildDeck filters out inappropriate words for family-friendly safety', () {
+      final service = GroqDeckService();
+      const rawJson = '''
+{
+  "name": "Party",
+  "category": "Entertainment",
+  "items": ["Dance Battle", "bad xxx content", "Charades", "explicit porn stuff", "Karaoke"]
+}
+''';
+      final deck = service.parseAndBuildDeck(
+        rawJson: rawJson,
+        fallbackTopic: 'Party',
+        targetCardCount: 25,
+      );
+
+      expect(deck.items, contains('Dance Battle'));
+      expect(deck.items, contains('Charades'));
+      expect(deck.items, contains('Karaoke'));
+      expect(deck.items.any((item) => item.contains('xxx') || item.contains('porn')), isFalse);
     });
   });
 }

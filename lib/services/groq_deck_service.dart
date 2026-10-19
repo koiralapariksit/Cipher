@@ -319,13 +319,15 @@ LIVE WEB / ENCYCLOPEDIC CONTEXT:
 $webSearchSnippets
 
 RULES:
-1. Even if the user enters a very difficult, obscure, narrow, or single-word topic, creatively expand into related concepts, famous examples, actions, tropes, and associations connected to that topic so you ALWAYS output at least 25 distinct items.
-2. Every item must be fun, recognizable, and great for guessing/acting in a party setting.
-3. Output strictly valid JSON with no markdown wrappers.
+1. DECK NAME SUMMARIZATION RULE: If the user inputs a long sentence, query, or detailed description (e.g. "60s-90s pop song mainly mj qeen beatles"), automatically summarize the core theme into a punchy, 1-word or 2-word UPPERCASE deck name (e.g. "LEGENDS" or "POP") for the "name" field. Never use raw long sentences or verbose queries as the deck title.
+2. CRITICAL SAFETY RULE: This game is played by children and families. Strictly prohibit any pornographic, adult, 18+, explicit, drug-related, violent, or harmful content. If a user requests restricted content, fallback to safe family-friendly pop culture, movies, web series, celebrities, or general party words. Content must be 100% kid-friendly.
+3. Even if the user enters a very difficult, obscure, narrow, or single-word topic, creatively expand into related concepts, famous examples, actions, tropes, and associations connected to that topic so you ALWAYS output at least 25 distinct items.
+4. Every item must be fun, recognizable, and great for guessing/acting in a party setting.
+5. Output strictly valid JSON with no markdown wrappers.
 
 OUTPUT SCHEMA (RAW JSON OBJECT ONLY):
 {
-  "name": "$topic",
+  "name": "<PUNCHY 1-WORD OR 2-WORD UPPERCASE TITLE, e.g. 'LEGENDS' or 'POP'>",
   "emoji": "",
   "category": "AI Custom",
   "colorValue": 4280391456,
@@ -344,6 +346,38 @@ OUTPUT SCHEMA (RAW JSON OBJECT ONLY):
         fallbackTopic: fallbackTopic,
         targetCardCount: targetCardCount,
       );
+
+  static String _summarizeDeckTitle(String rawTitle, String fallbackTopic) {
+    String candidate = rawTitle.trim();
+    if (candidate.isEmpty) {
+      candidate = fallbackTopic.trim();
+    }
+    candidate = candidate.replaceAll(RegExp(r'''^["']+|["']+$'''), '').trim();
+
+    final words = candidate
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .toList();
+
+    if (words.length > 2) {
+      candidate = words.take(2).join(' ');
+    }
+
+    return candidate.toUpperCase();
+  }
+
+  static bool _isSafeItem(String item) {
+    const prohibitedSubstrings = [
+      'porn', 'xxx', 'sex', 'nude', 'naked', 'erotic', 'cocaine', 'heroin',
+      'meth', 'weed', 'marijuana', 'dildo', 'vibrator', 'penis', 'vagina',
+      'boobs', 'asshole', 'fuck', 'bitch', 'cunt', 'dick', 'pussy', 'whore', 'slut'
+    ];
+    final lower = item.toLowerCase();
+    for (final term in prohibitedSubstrings) {
+      if (lower.contains(term)) return false;
+    }
+    return true;
+  }
 
   /// Parses, sanitizes, and verifies output against schema constraints.
   Deck _parseAndBuildDeck({
@@ -368,9 +402,8 @@ OUTPUT SCHEMA (RAW JSON OBJECT ONLY):
       data = jsonDecode(cleanJson) as Map<String, dynamic>;
     } catch (_) {}
 
-    final rawName = data['name']?.toString().trim();
-    final name =
-        (rawName != null && rawName.isNotEmpty) ? rawName : fallbackTopic;
+    final rawName = data['name']?.toString() ?? '';
+    final name = _summarizeDeckTitle(rawName, fallbackTopic);
 
     final category = data['category']?.toString().trim() ?? 'AI Custom';
     final colorValue = data['colorValue'] is int
@@ -384,6 +417,7 @@ OUTPUT SCHEMA (RAW JSON OBJECT ONLY):
     for (final item in rawItems) {
       final s = item?.toString().trim() ?? '';
       if (s.isEmpty) continue;
+      if (!_isSafeItem(s)) continue;
       final lower = s.toLowerCase();
       if (!seen.contains(lower)) {
         seen.add(lower);

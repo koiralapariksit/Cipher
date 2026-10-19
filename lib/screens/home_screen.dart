@@ -85,7 +85,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onToggleFavorite(String deckId) async {
-    final success = await _storage.toggleFavorite(deckId);
+    HapticFeedback.selectionClick();
+    await _storage.toggleFavorite(deckId);
+  }
+
+  void _onTogglePin(String deckId) async {
+    final success = await _storage.togglePin(deckId);
     if (!success && mounted) {
       HapticFeedback.heavyImpact();
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -108,7 +113,269 @@ class _HomeScreenState extends State<HomeScreen> {
           duration: const Duration(seconds: 3),
         ),
       );
+    } else {
+      HapticFeedback.mediumImpact();
     }
+  }
+
+  void _showDeckContextMenu(Deck deck) {
+    HapticFeedback.heavyImpact();
+    final isPinned = _storage.isPinned(deck.id);
+    final isFavorite = _storage.isFavorite(deck.id);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+        decoration: BoxDecoration(
+          color: kInk,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+          border: const Border(
+            top: BorderSide(color: kYellow, width: 2.5),
+            left: BorderSide(color: kYellow, width: 2.5),
+            right: BorderSide(color: kYellow, width: 2.5),
+          ),
+          boxShadow: kCardShadow,
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          deck.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.bowlbyOne(
+                            fontSize: 22,
+                            color: kCream,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          '${deck.category} • ${deck.items.length} cards',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: kInkDim,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(ctx),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: kCream,
+                        borderRadius: BorderRadius.circular(99),
+                        border: Border.all(color: kInk, width: 2),
+                      ),
+                      child: const Icon(Icons.close_rounded,
+                          size: 18, color: kInk),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              const Divider(color: Color(0x33FFFFFF), height: 1),
+              const SizedBox(height: 12),
+
+              // 1. PIN (Pins to top, max 2)
+              _buildContextMenuItem(
+                icon: isPinned ? Icons.push_pin_rounded : Icons.push_pin_outlined,
+                iconColor: kYellow,
+                title: isPinned ? 'Unpin from Top' : 'Pin to Top (Max 2)',
+                subtitle: isPinned
+                    ? 'Remove from top priority'
+                    : 'Priority #1: Top of library',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _onTogglePin(deck.id);
+                },
+              ),
+
+              // 2. FAVORITE (Marks as favorite)
+              _buildContextMenuItem(
+                icon: isFavorite
+                    ? Icons.star_rounded
+                    : Icons.star_outline_rounded,
+                iconColor: isFavorite ? kYellow : kCream,
+                title: isFavorite ? 'Remove from Favorites' : 'Add to Favorites',
+                subtitle: isFavorite
+                    ? 'Remove star'
+                    : 'Priority #2: Favorites list',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _storage.toggleFavorite(deck.id);
+                },
+              ),
+
+              // 3. EDIT (Opens DeckEditorScreen if custom deck)
+              _buildContextMenuItem(
+                icon: Icons.edit_rounded,
+                iconColor: deck.isCustom ? kLime : kInkDim,
+                title: 'Edit Deck',
+                subtitle: deck.isCustom
+                    ? 'Customize title, cards & colors'
+                    : 'Built-in starter decks cannot be modified',
+                enabled: deck.isCustom,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _openDeckEditor(deck);
+                },
+              ),
+
+              // 4. REMOVE (Deletes or archives with confirmation)
+              _buildContextMenuItem(
+                icon: Icons.delete_outline_rounded,
+                iconColor: deck.isCustom ? kPink : kInkDim,
+                title: 'Remove Deck',
+                subtitle: deck.isCustom
+                    ? 'Delete this deck permanently'
+                    : 'Built-in starter decks cannot be removed',
+                enabled: deck.isCustom,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _confirmDeleteDeck(deck);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _confirmDeleteDeck(Deck deck) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: kInk,
+        shape: RoundedRectangleBorder(
+          borderRadius: kAsymmetricRadius,
+          side: const BorderSide(color: kPink, width: 3.0),
+        ),
+        title: Text(
+          'Delete Deck?',
+          style: GoogleFonts.bowlbyOne(fontSize: 22, color: kPink),
+        ),
+        content: Text(
+          'Are you sure you want to permanently delete "${deck.name}"? This cannot be undone.',
+          style: GoogleFonts.dmSans(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: kCream,
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'CANCEL',
+              style: GoogleFonts.bowlbyOne(fontSize: 13, color: kCream),
+            ),
+          ),
+          GestureDetector(
+            onTap: () async {
+              Navigator.pop(ctx);
+              await _storage.deleteDeck(deck.id);
+              if (mounted) {
+                HapticFeedback.heavyImpact();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Deleted "${deck.name}".',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: kInk,
+                      ),
+                    ),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(99),
+                      side: const BorderSide(color: kInk, width: 2.0),
+                    ),
+                    backgroundColor: kPink,
+                  ),
+                );
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: kPink,
+                borderRadius: BorderRadius.circular(99),
+                border: Border.all(color: kInk, width: 2.0),
+                boxShadow: kSmallShadow,
+              ),
+              child: Text(
+                'DELETE',
+                style: GoogleFonts.bowlbyOne(fontSize: 13, color: kInk),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContextMenuItem({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    bool enabled = true,
+  }) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: enabled
+              ? iconColor.withValues(alpha: 0.15)
+              : const Color(0x14FFFFFF),
+          borderRadius: BorderRadius.circular(99),
+          border: Border.all(
+            color: enabled ? iconColor : kInkDim,
+            width: 1.8,
+          ),
+        ),
+        child: Icon(icon, color: enabled ? iconColor : kInkDim, size: 20),
+      ),
+      title: Text(
+        title,
+        style: GoogleFonts.bowlbyOne(
+          fontSize: 15,
+          color: enabled ? kCream : kInkDim,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: GoogleFonts.dmSans(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: enabled ? const Color(0xFFC0BACF) : kInkDim,
+        ),
+      ),
+      onTap: enabled ? onTap : null,
+    );
   }
 
   @override
@@ -129,26 +396,22 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     final query = _searchQuery.toLowerCase();
-    final filteredDecks = allDecks.where((deck) {
+    final matchingDecks = allDecks.where((deck) {
       final matchesSearch = query.isEmpty ||
           deck.name.toLowerCase().contains(query) ||
           deck.items.any((i) => i.toLowerCase().contains(query));
       if (!matchesSearch) return false;
 
       if (_selectedCategory == 'All') return true;
-      if (_selectedCategory == 'Favorites') return _storage.isFavorite(deck.id);
+      if (_selectedCategory == 'Favorites') {
+        return _storage.isFavorite(deck.id) || _storage.isPinned(deck.id);
+      }
       if (_selectedCategory == 'Custom') return deck.isCustom;
       return deck.category.toLowerCase() == _selectedCategory.toLowerCase();
     }).toList();
 
-    // Favorites first, then A to Z.
-    filteredDecks.sort((a, b) {
-      final aFav = _storage.isFavorite(a.id);
-      final bFav = _storage.isFavorite(b.id);
-      if (aFav && !bFav) return -1;
-      if (!aFav && bFav) return 1;
-      return a.name.compareTo(b.name);
-    });
+    // Priority 1: Pinned (up to 2) -> Priority 2: Favorites -> Priority 3: Standard
+    final filteredDecks = _storage.sortDecks(matchingDecks);
 
     final showCreateRows = _searchQuery.isEmpty;
 
@@ -567,11 +830,13 @@ class _HomeScreenState extends State<HomeScreen> {
       final tile = _DeckStickerCard(
         deck: deck,
         index: i,
+        isPinned: _storage.isPinned(deck.id),
         isFavorite: _storage.isFavorite(deck.id),
         highScore: _storage.getHighScoreForDeck(deck.id, deck.name),
         onTap: () => _onDeckTap(deck),
         onFavoriteToggle: () => _onToggleFavorite(deck.id),
         onEdit: deck.isCustom ? () => _openDeckEditor(deck) : null,
+        onLongPress: () => _showDeckContextMenu(deck),
       );
 
       if (isEven) {
@@ -726,20 +991,24 @@ class _TickerBandState extends State<_TickerBand>
 class _DeckStickerCard extends StatelessWidget {
   final Deck deck;
   final int index;
+  final bool isPinned;
   final bool isFavorite;
   final int highScore;
   final VoidCallback onTap;
   final VoidCallback onFavoriteToggle;
   final VoidCallback? onEdit;
+  final VoidCallback? onLongPress;
 
   const _DeckStickerCard({
     required this.deck,
     required this.index,
+    required this.isPinned,
     required this.isFavorite,
     required this.highScore,
     required this.onTap,
     required this.onFavoriteToggle,
     this.onEdit,
+    this.onLongPress,
   });
 
   @override
@@ -754,6 +1023,7 @@ class _DeckStickerCard extends StatelessWidget {
       angle: tiltAngle,
       child: _BouncyTap(
         onTap: onTap,
+        onLongPress: onLongPress,
         child: Container(
           height: cardHeight,
           padding: const EdgeInsets.fromLTRB(14, 12, 12, 14),
@@ -766,7 +1036,7 @@ class _DeckStickerCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top row: pill count + edit + favorite star
+              // Top row: pill count + pin badge + edit + favorite star
               Row(
                 children: [
                   Container(
@@ -787,6 +1057,36 @@ class _DeckStickerCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (isPinned) ...[
+                    const SizedBox(width: 5),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: kYellow,
+                        borderRadius: BorderRadius.circular(99),
+                        border: Border.all(color: kInk, width: 1.5),
+                        boxShadow: kSmallShadow,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.push_pin_rounded,
+                              size: 11, color: kInk),
+                          const SizedBox(width: 2),
+                          Text(
+                            'PIN',
+                            style: GoogleFonts.bowlbyOne(
+                              fontSize: 9,
+                              color: kInk,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const Spacer(),
                   if (onEdit != null)
                     GestureDetector(
@@ -930,8 +1230,13 @@ class _CreateStickerCard extends StatelessWidget {
 class _BouncyTap extends StatefulWidget {
   final Widget child;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
-  const _BouncyTap({required this.child, required this.onTap});
+  const _BouncyTap({
+    required this.child,
+    required this.onTap,
+    this.onLongPress,
+  });
 
   @override
   State<_BouncyTap> createState() => _BouncyTapState();
@@ -950,6 +1255,12 @@ class _BouncyTapState extends State<_BouncyTap> {
       onTapUp: (_) => setState(() => _pressed = false),
       onTapCancel: () => setState(() => _pressed = false),
       onTap: widget.onTap,
+      onLongPress: widget.onLongPress != null
+          ? () {
+              setState(() => _pressed = false);
+              widget.onLongPress!();
+            }
+          : null,
       behavior: HitTestBehavior.opaque,
       child: AnimatedScale(
         scale: _pressed ? 0.96 : 1.0,
