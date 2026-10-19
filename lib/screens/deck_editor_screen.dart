@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/deck.dart';
+import '../services/groq_deck_service.dart';
 import '../services/storage_service.dart';
 import '../theme/deck_colors.dart';
 
@@ -20,6 +21,8 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _wordInputController = TextEditingController();
+  final _aiTopicController = TextEditingController();
+  bool _isAiGenerating = false;
 
   late String _selectedEmoji;
   late int _selectedColor;
@@ -95,7 +98,52 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
   void dispose() {
     _nameController.dispose();
     _wordInputController.dispose();
+    _aiTopicController.dispose();
     super.dispose();
+  }
+
+  Future<void> _generateAiWords() async {
+    final topic = _aiTopicController.text.trim();
+    if (topic.isEmpty) {
+      _showSnack('Type a topic for AI generation first.');
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+    HapticFeedback.lightImpact();
+    setState(() => _isAiGenerating = true);
+
+    try {
+      final deck = await GroqDeckService().generateDeck(
+        topic: topic,
+        cardCount: 25,
+        difficulty: 'Party',
+      );
+
+      int addedCount = 0;
+      for (final item in deck.items) {
+        final clean = item.trim();
+        if (clean.isEmpty) continue;
+        if (!_words.any((w) => w.toLowerCase() == clean.toLowerCase())) {
+          _words.insert(0, clean);
+          addedCount++;
+        }
+      }
+
+      if (_nameController.text.trim().isEmpty) {
+        _nameController.text = deck.name;
+      }
+
+      _aiTopicController.clear();
+      HapticFeedback.heavyImpact();
+      _showSnack('Added $addedCount words from AI!');
+    } catch (_) {
+      _showSnack('No internet connection! Check your Wi-Fi and try again.');
+    } finally {
+      if (mounted) {
+        setState(() => _isAiGenerating = false);
+      }
+    }
   }
 
   void _addWordsFromInput() {
@@ -479,6 +527,8 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
                       _buildDeckIconPicker(),
                       const SizedBox(height: 20),
                       _buildColorPicker(),
+                      const SizedBox(height: 24),
+                      _buildAiAutoFillCard(),
                       const SizedBox(height: 24),
 
                       // Cards List Section Header
@@ -971,6 +1021,118 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildAiAutoFillCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: kLime,
+        borderRadius: kAsymmetricRadius,
+        border: Border.all(color: kInk, width: 2.0),
+        boxShadow: kCardShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.auto_awesome_rounded, color: kInk, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'OPTIONAL: AUTO-FILL WITH AI',
+                  style: GoogleFonts.bowlbyOne(
+                    fontSize: 16,
+                    color: kInk,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            decoration: BoxDecoration(
+              color: kCream,
+              borderRadius: BorderRadius.circular(99),
+              border: Border.all(color: kInk, width: 2.0),
+              boxShadow: kSmallShadow,
+            ),
+            child: TextField(
+              controller: _aiTopicController,
+              enableSuggestions: false,
+              autocorrect: false,
+              style: GoogleFonts.dmSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: kInk,
+              ),
+              cursorColor: kInk,
+              decoration: InputDecoration(
+                hintText: 'Type any topic to generate words...',
+                hintStyle: GoogleFonts.dmSans(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: kInkDim,
+                ),
+                prefixIcon: const Icon(Icons.search_rounded,
+                    color: kInk, size: 20),
+                border: InputBorder.none,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              ),
+              onSubmitted: (_) => _isAiGenerating ? null : _generateAiWords(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerRight,
+            child: GestureDetector(
+              onTap: _isAiGenerating ? null : _generateAiWords,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 18, vertical: 10),
+                decoration: BoxDecoration(
+                  color: kInk,
+                  borderRadius: BorderRadius.circular(99),
+                  border: Border.all(color: kInk, width: 2.0),
+                  boxShadow: kSmallShadow,
+                ),
+                child: _isAiGenerating
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: kLime,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'GENERATING...',
+                            style: GoogleFonts.bowlbyOne(
+                              fontSize: 13,
+                              color: kLime,
+                            ),
+                          ),
+                        ],
+                      )
+                    : Text(
+                        'GENERATE WORDS',
+                        style: GoogleFonts.bowlbyOne(
+                          fontSize: 13,
+                          color: kLime,
+                        ),
+                      ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

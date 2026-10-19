@@ -105,8 +105,8 @@ class StorageService with ChangeNotifier {
   List<Deck> get allDecks => [...Deck.starterDecks, ..._customDecks];
 
   /// Initialize and load all stored data.
-  Future<void> init() async {
-    if (_initialized) return;
+  Future<void> init({bool force = false}) async {
+    if (_initialized && !force) return;
     _prefs = await SharedPreferences.getInstance();
 
     // 1. Settings
@@ -132,10 +132,10 @@ class StorageService with ChangeNotifier {
       }).whereType<Deck>().toList();
     }
 
-    // 3. Favorites
+    // 3. Favorites (Max 2 pinned decks)
     final favoritesList = _prefs?.getStringList(_keyFavorites);
     if (favoritesList != null) {
-      _favoriteDeckIds = favoritesList.toSet();
+      _favoriteDeckIds = favoritesList.take(2).toSet();
     }
 
     // 4. History
@@ -192,18 +192,28 @@ class StorageService with ChangeNotifier {
     await _prefs?.setStringList(_keyCustomDecks, list);
   }
 
-  // ── Favorites ──────────────────────────────────────────────────────────
+  // ── Favorites (Strict Max 2 Pinned) ────────────────────────────────────
 
   bool isFavorite(String deckId) => _favoriteDeckIds.contains(deckId);
 
-  Future<void> toggleFavorite(String deckId) async {
+  /// Toggles favorite status for [deckId].
+  /// Returns `true` if pinned/unpinned successfully.
+  /// Returns `false` if pinning is blocked because 2 decks are already pinned.
+  Future<bool> toggleFavorite(String deckId) async {
     if (_favoriteDeckIds.contains(deckId)) {
       _favoriteDeckIds.remove(deckId);
+      await _persistFavorites();
+      notifyListeners();
+      return true;
     } else {
+      if (_favoriteDeckIds.length >= 2) {
+        return false;
+      }
       _favoriteDeckIds.add(deckId);
+      await _persistFavorites();
+      notifyListeners();
+      return true;
     }
-    await _persistFavorites();
-    notifyListeners();
   }
 
   Future<void> _persistFavorites() async {

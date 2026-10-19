@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -183,7 +184,7 @@ class GroqDeckService {
     final apiKey = await getApiKey();
     if (apiKey == null || apiKey.isEmpty) {
       throw Exception(
-        'Missing Groq API Key. Add your key to .env or update it in app settings.',
+        'AI deck generator is currently offline. Please try again later.',
       );
     }
 
@@ -278,36 +279,38 @@ class GroqDeckService {
         }
 
         if (response.statusCode == 401) {
-          throw Exception('Invalid Groq API Key. Please verify your key.');
+          throw Exception(
+              'AI deck generator is currently offline. Please try again later.');
         }
 
         if (response.statusCode == 429) {
           throw Exception(
-              'Groq rate limit reached. Please wait a few seconds and retry.');
+              'AI generator is busy. Please wait a few seconds and retry.');
         }
 
-        lastError = 'Groq API error (${response.statusCode}): ${response.body}';
+        lastError = 'Service error (${response.statusCode})';
       } catch (e) {
         if (e is Exception &&
-            (e.toString().contains('Invalid Groq') ||
-                e.toString().contains('rate limit'))) {
+            (e.toString().contains('offline') ||
+                e.toString().contains('busy'))) {
           rethrow;
         }
         lastError = e.toString();
       }
     }
 
-    throw Exception(lastError ?? 'Failed to generate deck with Groq.');
+    throw Exception(lastError ??
+        'AI deck generator is currently offline. Please try again later.');
   }
 
-  /// Builds the prompt according to the strict two-step verification specification.
+  /// Builds the prompt according to the strict party charades specification.
   String _buildPrompt({
     required String topic,
     required int cardCount,
     required String difficulty,
     required String webSearchSnippets,
   }) {
-    return '''You are the factual accuracy and intelligence engine for "Cipher", a party guessing game.
+    return '''You are a party charades deck generator for "Cipher". Always generate between 25 and 35 actable, fun words or short phrases.
 Target Topic: "$topic"
 Target Count: $cardCount
 Target Difficulty: "$difficulty"
@@ -315,25 +318,32 @@ Target Difficulty: "$difficulty"
 LIVE WEB / ENCYCLOPEDIC CONTEXT:
 $webSearchSnippets
 
-STRICT VERIFICATION & FACT-CHECKING RULES:
-1. STRICT QUALIFICATION CHECK: Every single item MUST strictly satisfy all conditions in the prompt.
-   - Example failure: If topic is "Ballon d'Or Winners", nominees, runner-ups, and Kopa/Yashin trophy winners (e.g., Jude Bellingham, Andrés Iniesta, Neymar, Thierry Henry) are STRICTLY DISQUALIFIED. Only official winners (e.g., Lionel Messi, Cristiano Ronaldo, Kaká, Ronaldinho, Luka Modrić, Karim Benzema, Rodri, Rivaldo, Zidane, George Weah, Marco van Basten) are permitted.
-2. ZERO TOLERANCE FOR FALSE POSITIVES: Do not include an item simply because it is famous or associated with the subject. If an entity did not definitively achieve/meet the requested criteria, exclude it.
-3. NEGATIVE CHECK BEFORE EMITTING:
-   - Does this item strictly meet the exact query criteria? If doubtful, discard and replace.
-4. QUANTITY & DIVERSITY:
-   - Emit exactly $cardCount unique items.
-   - If the exact historical pool is smaller than $cardCount, include all valid entities across eras (historical and modern) rather than inventing or padding with unqualified entries.
+RULES:
+1. Even if the user enters a very difficult, obscure, narrow, or single-word topic, creatively expand into related concepts, famous examples, actions, tropes, and associations connected to that topic so you ALWAYS output at least 25 distinct items.
+2. Every item must be fun, recognizable, and great for guessing/acting in a party setting.
+3. Output strictly valid JSON with no markdown wrappers.
 
 OUTPUT SCHEMA (RAW JSON OBJECT ONLY):
 {
   "name": "$topic",
-  "emoji": "<single relevant emoji>",
+  "emoji": "",
   "category": "AI Custom",
   "colorValue": 4280391456,
   "items": ["Item 1", "Item 2", ...]
 }''';
   }
+
+  @visibleForTesting
+  Deck parseAndBuildDeck({
+    required String rawJson,
+    required String fallbackTopic,
+    required int targetCardCount,
+  }) =>
+      _parseAndBuildDeck(
+        rawJson: rawJson,
+        fallbackTopic: fallbackTopic,
+        targetCardCount: targetCardCount,
+      );
 
   /// Parses, sanitizes, and verifies output against schema constraints.
   Deck _parseAndBuildDeck({
@@ -353,15 +363,14 @@ OUTPUT SCHEMA (RAW JSON OBJECT ONLY):
     }
     cleanJson = cleanJson.trim();
 
-    final data = jsonDecode(cleanJson) as Map<String, dynamic>;
+    Map<String, dynamic> data = {};
+    try {
+      data = jsonDecode(cleanJson) as Map<String, dynamic>;
+    } catch (_) {}
 
     final rawName = data['name']?.toString().trim();
-    final name = (rawName != null && rawName.isNotEmpty) ? rawName : fallbackTopic;
-
-    final rawEmoji = data['emoji']?.toString().trim();
-    final emoji = (rawEmoji != null && rawEmoji.isNotEmpty)
-        ? String.fromCharCode(rawEmoji.runes.first)
-        : '🎯';
+    final name =
+        (rawName != null && rawName.isNotEmpty) ? rawName : fallbackTopic;
 
     final category = data['category']?.toString().trim() ?? 'AI Custom';
     final colorValue = data['colorValue'] is int
@@ -382,10 +391,43 @@ OUTPUT SCHEMA (RAW JSON OBJECT ONLY):
       }
     }
 
-    if (sanitizedItems.length < 3) {
-      throw Exception(
-        'Deck generator produced too few valid cards (${sanitizedItems.length}). Please try a different topic.',
-      );
+    // Creative auto-padding if fewer than 15 items returned so gameplay is never blocked
+    if (sanitizedItems.length < 15) {
+      final List<String> fallbackPatterns = [
+        '$fallbackTopic Fan',
+        '$fallbackTopic Expert',
+        'Acting out $fallbackTopic',
+        'Drawing $fallbackTopic',
+        'Singing about $fallbackTopic',
+        'Watching $fallbackTopic',
+        '$fallbackTopic Legend',
+        '$fallbackTopic Mystery',
+        '$fallbackTopic Champion',
+        'Mastering $fallbackTopic',
+        '$fallbackTopic World',
+        '$fallbackTopic Secrets',
+        '$fallbackTopic Night',
+        'Extreme $fallbackTopic',
+        'Classic $fallbackTopic',
+        'Ultimate $fallbackTopic',
+        '$fallbackTopic Adventure',
+        'The $fallbackTopic Show',
+        '$fallbackTopic Challenge',
+        'The Art of $fallbackTopic',
+        '$fallbackTopic Party',
+        'Retro $fallbackTopic',
+        '$fallbackTopic Quest',
+        'Super $fallbackTopic',
+        '$fallbackTopic Mania',
+      ];
+      for (final phrase in fallbackPatterns) {
+        final lower = phrase.toLowerCase();
+        if (!seen.contains(lower)) {
+          seen.add(lower);
+          sanitizedItems.add(phrase);
+        }
+        if (sanitizedItems.length >= 25) break;
+      }
     }
 
     // Shuffle cards so every game starts with a random word sequence
@@ -394,7 +436,7 @@ OUTPUT SCHEMA (RAW JSON OBJECT ONLY):
     return Deck(
       id: 'custom_ai_${DateTime.now().millisecondsSinceEpoch}',
       name: name,
-      emoji: emoji,
+      emoji: '',
       category: category,
       colorValue: colorValue,
       isCustom: true,

@@ -152,11 +152,11 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
         _loadingMessage = 'Encrypting Deck...';
       });
 
-      final errorMessage = e.toString().replaceAll('Exception:', '').trim();
+      HapticFeedback.mediumImpact();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            errorMessage,
+            'No internet connection! Check your Wi-Fi and try again.',
             style: GoogleFonts.dmSans(
               fontSize: 13,
               fontWeight: FontWeight.w700,
@@ -170,127 +170,9 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
           ),
           backgroundColor: kOrange,
           duration: const Duration(seconds: 4),
-          action: SnackBarAction(
-            label: 'API Key',
-            textColor: kInk,
-            onPressed: _showApiKeyDialog,
-          ),
         ),
       );
     }
-  }
-
-  /// Dialog allowing user to verify or update their Groq API Key on device.
-  void _showApiKeyDialog() async {
-    final currentKey = await _groqService.getApiKey() ?? '';
-    if (!mounted) return;
-
-    final controller = TextEditingController(text: currentKey);
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: kInk,
-        shape: RoundedRectangleBorder(
-          borderRadius: kAsymmetricRadius,
-          side: const BorderSide(color: kCream, width: 3.5),
-        ),
-        title: Text(
-          'Groq API Key',
-          style: GoogleFonts.bowlbyOne(fontSize: 20, color: kYellow),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Key is loaded automatically from .env. You can also override or update it here:',
-              style: GoogleFonts.dmSans(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: kCream,
-                height: 1.35,
-              ),
-            ),
-            const SizedBox(height: 14),
-            Container(
-              decoration: BoxDecoration(
-                color: kCream,
-                borderRadius: BorderRadius.circular(99),
-                border: Border.all(color: kInk, width: 2.0),
-                boxShadow: kSmallShadow,
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: TextField(
-                controller: controller,
-                enableSuggestions: false,
-                autocorrect: false,
-                style: GoogleFonts.dmSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: kInk,
-                ),
-                cursorColor: kInk,
-                obscureText: true,
-                decoration: InputDecoration(
-                  hintText: 'gsk_...',
-                  hintStyle: GoogleFonts.dmSans(fontSize: 13, color: kInkDim),
-                  border: InputBorder.none,
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(
-              'CANCEL',
-              style: GoogleFonts.bowlbyOne(fontSize: 13, color: kCream),
-            ),
-          ),
-          GestureDetector(
-            onTap: () async {
-              await _groqService.saveApiKey(controller.text.trim());
-              if (ctx.mounted) Navigator.of(ctx).pop();
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Groq API Key updated successfully.',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: kInk,
-                      ),
-                    ),
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(99),
-                      side: const BorderSide(color: kInk, width: 2.0),
-                    ),
-                    backgroundColor: kLime,
-                  ),
-                );
-              }
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: kLime,
-                borderRadius: BorderRadius.circular(99),
-                border: Border.all(color: kInk, width: 2.0),
-                boxShadow: kSmallShadow,
-              ),
-              child: Text(
-                'SAVE KEY',
-                style: GoogleFonts.bowlbyOne(fontSize: 13, color: kInk),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   /// Celebratory bottom sheet presenting the newly sealed encrypted deck.
@@ -469,21 +351,6 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
                       ),
                     ),
                     const Spacer(),
-                    GestureDetector(
-                      onTap: _showApiKeyDialog,
-                      child: Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          color: kYellow,
-                          borderRadius: BorderRadius.circular(99),
-                          border: Border.all(color: kInk, width: 2.0),
-                          boxShadow: kSmallShadow,
-                        ),
-                        child: const Icon(Icons.key_outlined,
-                            size: 20, color: kInk),
-                      ),
-                    ),
                   ],
                 ),
               ),

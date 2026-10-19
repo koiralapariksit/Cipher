@@ -84,6 +84,33 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _onToggleFavorite(String deckId) async {
+    final success = await _storage.toggleFavorite(deckId);
+    if (!success && mounted) {
+      HapticFeedback.heavyImpact();
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Max 2 decks can be pinned! Unpin one first.',
+            style: GoogleFonts.dmSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: kCream,
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(99),
+            side: const BorderSide(color: kYellow, width: 2.0),
+          ),
+          backgroundColor: kInk,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final allDecks = _storage.allDecks;
@@ -543,7 +570,7 @@ class _HomeScreenState extends State<HomeScreen> {
         isFavorite: _storage.isFavorite(deck.id),
         highScore: _storage.getHighScoreForDeck(deck.id, deck.name),
         onTap: () => _onDeckTap(deck),
-        onFavoriteToggle: () => _storage.toggleFavorite(deck.id),
+        onFavoriteToggle: () => _onToggleFavorite(deck.id),
         onEdit: deck.isCustom ? () => _openDeckEditor(deck) : null,
       );
 

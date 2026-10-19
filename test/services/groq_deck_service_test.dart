@@ -29,6 +29,48 @@ void main() {
       final initialCount = storage.customDecks.length;
       expect(initialCount, isNonNegative);
     });
+
+    test('parseAndBuildDeck auto-pads short responses without throwing error', () {
+      final service = GroqDeckService();
+      const rawJson = '''
+{
+  "name": "Superconductors",
+  "category": "Science",
+  "items": ["Yttrium Barium", "Meissner Effect", "Zero Resistance"]
+}
+''';
+      final deck = service.parseAndBuildDeck(
+        rawJson: rawJson,
+        fallbackTopic: 'Superconductors',
+        targetCardCount: 25,
+      );
+
+      expect(deck.name, 'Superconductors');
+      expect(deck.emoji, '');
+      expect(deck.items.length, greaterThanOrEqualTo(25));
+      expect(deck.items, contains('Meissner Effect'));
+      expect(deck.items, contains('Superconductors Fan'));
+    });
+
+    test('Missing API Key throws friendly offline error without mentioning .env or Groq', () async {
+      final service = GroqDeckService();
+      // Ensure no key saved in mock prefs
+      await service.saveApiKey('');
+
+      expect(
+        () => service.generateDeck(
+          topic: 'Quantum Physics',
+          cardCount: 25,
+          difficulty: 'Party',
+        ),
+        throwsA(
+          predicate((e) =>
+              e.toString().contains('AI deck generator is currently offline') &&
+              !e.toString().contains('.env') &&
+              !e.toString().contains('Groq')),
+        ),
+      );
+    });
   });
 }
 

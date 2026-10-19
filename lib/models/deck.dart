@@ -62,7 +62,7 @@ class Deck {
     return Deck(
       id: map['id'] as String? ?? map['name'] as String? ?? '',
       name: map['name'] as String? ?? '',
-      emoji: map['emoji'] as String? ?? '🎯',
+      emoji: map['emoji'] as String? ?? '',
       colorValue: (map['colorValue'] as num?)?.toInt() ?? 0xFF38BDF8,
       items: (map['items'] as List<dynamic>?)
               ?.map((e) => e.toString())
@@ -80,22 +80,22 @@ class Deck {
     return Deck.fromMap(json.decode(source as String) as Map<String, dynamic>);
   }
 
-  /// All built-in starter decks.
+  /// All built-in emoji-free starter decks.
   static const List<Deck> starterDecks = [
     _animals,
-    _food,
-    _movies,
+    _moviesTv,
+    _foodDrinks,
     _sports,
-    _everydayObjects,
-    _actions,
+    _countries,
+    _celebrities,
   ];
 
-  // ── Animals ──────────────────────────────────────────────────────────
+  // ── 1. Animals ────────────────────────────────────────────────────────
   static const _animals = Deck(
-    id: 'starter_animals',
+    id: 'animals',
     name: 'Animals',
-    emoji: '🦁',
-    colorValue: 0xFF4E9F6E, // Luxury Emerald
+    emoji: '',
+    colorValue: 0xFF4E9F6E,
     category: 'Nature',
     items: [
       'Lion', 'Elephant', 'Kangaroo', 'Penguin', 'Giraffe',
@@ -104,32 +104,18 @@ class Deck {
       'Hippopotamus', 'Sloth', 'Zebra', 'Panda', 'Platypus',
       'Ostrich', 'Tiger', 'Polar Bear', 'Walrus', 'Chameleon',
       'Hedgehog', 'Peacock', 'Gorilla', 'Otter', 'Crocodile',
+      'Camel', 'Meerkat', 'Jaguar', 'Pelican', 'Beaver',
+      'Armadillo', 'Badger', 'Skunk', 'Raccoon', 'Lemur',
+      'Hyena', 'Antelope', 'Moose', 'Seahorse', 'Starfish',
     ],
   );
 
-  // ── Food ─────────────────────────────────────────────────────────────
-  static const _food = Deck(
-    id: 'starter_food',
-    name: 'Food & Drinks',
-    emoji: '🍕',
-    colorValue: 0xFFD47A45, // Cognac Amber
-    category: 'Lifestyle',
-    items: [
-      'Pizza', 'Sushi', 'Cheeseburger', 'Ice Cream', 'Tacos',
-      'Pancakes', 'Spaghetti', 'Hot Dog', 'Chocolate Cake', 'French Fries',
-      'Burrito', 'Waffles', 'Popcorn', 'Donut', 'Guacamole',
-      'Smoothie', 'Croissant', 'Ramen', 'Cotton Candy', 'Fried Chicken',
-      'Apple Pie', 'Nachos', 'Milkshake', 'Pretzel', 'Bagel',
-      'Cupcake', 'Lasagna', 'Boba Tea', 'Cheesecake', 'Churros',
-    ],
-  );
-
-  // ── Movies & TV ──────────────────────────────────────────────────────
-  static const _movies = Deck(
-    id: 'starter_movies',
+  // ── 2. Movies & TV ───────────────────────────────────────────────────
+  static const _moviesTv = Deck(
+    id: 'movies_tv',
     name: 'Movies & TV',
-    emoji: '🍿',
-    colorValue: 0xFFB38F4D, // Warm Bronze
+    emoji: '',
+    colorValue: 0xFFB38F4D,
     category: 'Entertainment',
     items: [
       'Titanic', 'Jurassic Park', 'Star Wars', 'The Avengers', 'Harry Potter',
@@ -138,16 +124,39 @@ class Deck {
       'The Dark Knight', 'Home Alone', 'Avatar', 'Ghostbusters', 'Forrest Gump',
       'Pirates of the Caribbean', 'The Office', 'Friends', 'Game of Thrones', 'Iron Man',
       'Jaws', 'E.T.', 'Indiana Jones', 'Moana', 'Monsters Inc',
+      'Squid Game', 'Breaking Bad', 'The Simpsons', 'Black Panther', 'Gladiator',
+      'Shrek 2', 'Coco', 'Interstellar', 'Top Gun', 'The Terminator',
+      'Mean Girls', 'Pulp Fiction', 'The Wizard of Oz', 'Wednesday', 'The Mandalorian',
     ],
   );
 
-  // ── Sports & Fitness ─────────────────────────────────────────────────
+  // ── 3. Food & Drinks ─────────────────────────────────────────────────
+  static const _foodDrinks = Deck(
+    id: 'food_drinks',
+    name: 'Food & Drinks',
+    emoji: '',
+    colorValue: 0xFFD47A45,
+    category: 'Lifestyle',
+    items: [
+      'Pizza', 'Sushi', 'Cheeseburger', 'Ice Cream', 'Tacos',
+      'Pancakes', 'Spaghetti', 'Hot Dog', 'Chocolate Cake', 'French Fries',
+      'Burrito', 'Waffles', 'Popcorn', 'Donut', 'Guacamole',
+      'Smoothie', 'Croissant', 'Ramen', 'Cotton Candy', 'Fried Chicken',
+      'Apple Pie', 'Nachos', 'Milkshake', 'Pretzel', 'Bagel',
+      'Cupcake', 'Lasagna', 'Boba Tea', 'Cheesecake', 'Churros',
+      'Dumplings', 'Falafel', 'Fondue', 'Barbecue Ribs', 'Crepes',
+      'Pecan Pie', 'Gummy Bears', 'Milk Chocolate', 'Espresso', 'Hot Chocolate',
+      'Tiramisu', 'Caesar Salad', 'Fish and Chips', 'Macaroni and Cheese', 'Shawarma',
+    ],
+  );
+
+  // ── 4. Sports ────────────────────────────────────────────────────────
   static const _sports = Deck(
-    id: 'starter_sports',
+    id: 'sports',
     name: 'Sports',
-    emoji: '⚽',
-    colorValue: 0xFF7A8691, // Muted Slate Stone
-    category: 'Sports',
+    emoji: '',
+    colorValue: 0xFF7A8691,
+    category: 'Actions',
     items: [
       'Soccer', 'Basketball', 'Baseball', 'Tennis', 'American Football',
       'Swimming', 'Volleyball', 'Golf', 'Skateboarding', 'Surfing',
@@ -155,40 +164,49 @@ class Deck {
       'Gymnastics', 'Table Tennis', 'Badminton', 'Archery', 'Cycling',
       'Wrestling', 'Cricket', 'Rugby', 'Rock Climbing', 'Karate',
       'Figure Skating', 'Marathon', 'Dodgeball', 'Rowing', 'Fencing',
+      'Horse Racing', 'Water Polo', 'Javelin Throw', 'Pole Vault', 'Curling',
+      'Bobsleigh', 'Billiards', 'Darts', 'BMX Racing', 'Triathlon',
+      'Weightlifting', 'Kayaking', 'Handball', 'Lacrosse', 'Sumo Wrestling',
     ],
   );
 
-  // ── Everyday Objects ─────────────────────────────────────────────────
-  static const _everydayObjects = Deck(
-    id: 'starter_objects',
-    name: 'Objects',
-    emoji: '💡',
-    colorValue: 0xFFC8A45C, // Metallic Gold
-    category: 'Everyday',
+  // ── 5. Countries ─────────────────────────────────────────────────────
+  static const _countries = Deck(
+    id: 'countries',
+    name: 'Countries',
+    emoji: '',
+    colorValue: 0xFF2F5BFF,
+    category: 'World',
     items: [
-      'Toothbrush', 'Umbrella', 'Coffee Mug', 'Headphones', 'Sunglasses',
-      'Backpack', 'Smartphone', 'Wristwatch', 'Flashlight', 'Keys',
-      'Pillow', 'Laptop', 'Water Bottle', 'Scissors', 'Toaster',
-      'Microwave', 'Bicycle', 'Spoon', 'Mirror', 'Blanket',
-      'Wallet', 'Guitar', 'Hair Dryer', 'Clock', 'Candle',
-      'Shoelaces', 'Remote Control', 'Trash Can', 'Book', 'Hammer',
+      'France', 'Japan', 'Brazil', 'Australia', 'Canada',
+      'Egypt', 'Italy', 'India', 'Mexico', 'Germany',
+      'United Kingdom', 'Spain', 'South Africa', 'Argentina', 'Thailand',
+      'Greece', 'Norway', 'South Korea', 'New Zealand', 'Switzerland',
+      'China', 'United States', 'Turkey', 'Iceland', 'Netherlands',
+      'Peru', 'Morocco', 'Sweden', 'Portugal', 'Ireland',
+      'Singapore', 'Vietnam', 'Kenya', 'Chile', 'Colombia',
+      'Austria', 'Finland', 'Poland', 'Croatia', 'Philippines',
+      'Nepal', 'Jamaica', 'Cuba', 'Costa Rica', 'Belgium',
     ],
   );
 
-  // ── Actions & Verbs ──────────────────────────────────────────────────
-  static const _actions = Deck(
-    id: 'starter_actions',
-    name: 'Actions',
-    emoji: '🎭',
-    colorValue: 0xFFA65B32, // Deep Terracotta
-    category: 'Activity',
+  // ── 6. Celebrities ───────────────────────────────────────────────────
+  static const _celebrities = Deck(
+    id: 'celebrities',
+    name: 'Celebrities',
+    emoji: '',
+    colorValue: 0xFFFF3D8B,
+    category: 'Entertainment',
     items: [
-      'Dancing', 'Singing', 'Cooking', 'Juggling', 'Sleeping',
-      'Whispering', 'Laughing', 'Swimming', 'Yawning', 'Sneezing',
-      'Driving', 'Painting', 'Fishing', 'Typing', 'Reading',
-      'Exercising', 'Crying', 'Clapping', 'Skipping', 'Winking',
-      'Stretching', 'Meditating', 'Shuffling Cards', 'Whistling', 'Taking a Selfie',
-      'Brushing Teeth', 'Walking a Dog', 'Playing Video Games', 'Baking Cookies', 'Climbing a Tree',
+      'Taylor Swift', 'Leonardo DiCaprio', 'Beyonce', 'Tom Cruise', 'Rihanna',
+      'Dwayne Johnson', 'Lady Gaga', 'Brad Pitt', 'Selena Gomez', 'Will Smith',
+      'Ariana Grande', 'Keanu Reeves', 'Adele', 'Johnny Depp', 'Billie Eilish',
+      'Morgan Freeman', 'Zendaya', 'Robert Downey Jr', 'Scarlett Johansson', 'Cristiano Ronaldo',
+      'Lionel Messi', 'Oprah Winfrey', 'Ed Sheeran', 'Tom Hanks', 'Jennifer Aniston',
+      'Michael Jackson', 'Elvis Presley', 'Madonna', 'Justin Bieber', 'Shakira',
+      'Kanye West', 'Drake', 'Bruno Mars', 'Eminem', 'Katy Perry',
+      'Barack Obama', 'Miley Cyrus', 'Chris Hemsworth', 'Ryan Reynolds', 'Emma Watson',
+      'Harrison Ford', 'Jackie Chan', 'Gordon Ramsay', 'Steve Jobs', 'Albert Einstein',
     ],
   );
 }
