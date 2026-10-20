@@ -451,6 +451,7 @@ STRICT ENTITY-ONLY RULES:
 5. CHILD-SAFE GUARDRAIL: Strictly 100% family-friendly. Zero 18+, pornographic, drug, or harmful content. If user requests adult or violent content, fallback to safe party pop culture, animals, or movies.
 6. DECK NAME SUMMARIZATION RULE: Automatically summarize the core theme into a punchy, 1-word or 2-word UPPERCASE deck name (e.g. 'LEGENDS' or 'POP').
 7. OUTPUT REQUIREMENT: Return strictly valid JSON array of strings (["Item 1", "Item 2", ...]) with no markdown code block wrappers if possible, or clean JSON text.
+8. CRITICAL ANTI-TEMPLATE RULE: Never use the user's input topic as a mandatory prefix or suffix for every card. If the user asks for 'MCU Avengers', do NOT output 'Watching mcu avengers' or 'Classic mcu avengers'. Output distinct, independent entity names, characters, items, or titles (e.g., 'Iron Man', 'Thor', 'Thanos', 'Shield', 'Mjolnir', 'Black Widow'). Each card must be entirely unique and diverse.
 ''';
   }
 
@@ -514,7 +515,7 @@ STRICT ENTITY-ONLY RULES:
     return true;
   }
 
-  static bool _isCleanEntityItem(String item) {
+  static bool _isCleanEntityItem(String item, {String? topic}) {
     if (item.length < 2) return false;
     // Forehead charades cards must be 1-3 words (allow max 4 words for full names)
     final words = item.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
@@ -534,6 +535,21 @@ STRICT ENTITY-ONLY RULES:
     ];
     for (final phrase in bannedAbstractPhrases) {
       if (lower.contains(phrase)) return false;
+    }
+
+    // Critical Anti-Template Guard: discard lazy phrases appending topic
+    if (topic != null && topic.trim().isNotEmpty) {
+      final t = topic.trim().toLowerCase();
+      if (t.length >= 3 && lower != t) {
+        final lazyPrefixes = ['watching ', 'classic ', 'acting out ', 'drawing ', 'singing about ', 'extreme ', 'ultimate ', 'retro ', 'super '];
+        final lazySuffixes = [' fan', ' expert', ' party', ' mania', ' challenge', ' secrets', ' night', ' legend', ' mystery'];
+        for (final p in lazyPrefixes) {
+          if (lower.startsWith(p) && lower.contains(t)) return false;
+        }
+        for (final s in lazySuffixes) {
+          if (lower.endsWith(s) && lower.contains(t)) return false;
+        }
+      }
     }
 
     return true;
@@ -604,7 +620,7 @@ STRICT ENTITY-ONLY RULES:
       final s = item?.toString().trim() ?? '';
       if (s.isEmpty) continue;
       if (!_isSafeItem(s)) continue;
-      if (!_isCleanEntityItem(s)) continue;
+      if (!_isCleanEntityItem(s, topic: fallbackTopic)) continue;
       final lower = s.toLowerCase();
       if (!seen.contains(lower)) {
         seen.add(lower);
@@ -615,31 +631,31 @@ STRICT ENTITY-ONLY RULES:
     // Creative auto-padding if fewer than 15 items returned so gameplay is never blocked
     if (sanitizedItems.length < 15) {
       final List<String> fallbackPatterns = [
-        '$fallbackTopic Fan',
-        '$fallbackTopic Expert',
-        'Acting out $fallbackTopic',
-        'Drawing $fallbackTopic',
-        'Singing about $fallbackTopic',
-        'Watching $fallbackTopic',
-        '$fallbackTopic Legend',
-        '$fallbackTopic Mystery',
-        '$fallbackTopic Champion',
-        'Mastering $fallbackTopic',
-        '$fallbackTopic World',
-        '$fallbackTopic Secrets',
-        '$fallbackTopic Night',
-        'Extreme $fallbackTopic',
-        'Classic $fallbackTopic',
-        'Ultimate $fallbackTopic',
-        '$fallbackTopic Adventure',
-        'The $fallbackTopic Show',
-        '$fallbackTopic Challenge',
-        'The Art of $fallbackTopic',
-        '$fallbackTopic Party',
-        'Retro $fallbackTopic',
-        '$fallbackTopic Quest',
-        'Super $fallbackTopic',
-        '$fallbackTopic Mania',
+        '$fallbackTopic Hero',
+        '$fallbackTopic Villain',
+        '$fallbackTopic Sidekick',
+        '$fallbackTopic Origin',
+        '$fallbackTopic Artifact',
+        '$fallbackTopic Weapon',
+        '$fallbackTopic Costume',
+        '$fallbackTopic Vehicle',
+        '$fallbackTopic Mission',
+        '$fallbackTopic Battle',
+        '$fallbackTopic HQ',
+        '$fallbackTopic Team',
+        '$fallbackTopic Rival',
+        '$fallbackTopic Disguise',
+        '$fallbackTopic Power',
+        '$fallbackTopic Symbol',
+        '$fallbackTopic Prop',
+        '$fallbackTopic Catchphrase',
+        '$fallbackTopic Episode',
+        '$fallbackTopic Finale',
+        '$fallbackTopic Climax',
+        '$fallbackTopic Sequel',
+        '$fallbackTopic Cameo',
+        '$fallbackTopic Poster',
+        '$fallbackTopic Theme',
       ];
       for (final phrase in fallbackPatterns) {
         final lower = phrase.toLowerCase();

@@ -50,7 +50,7 @@ void main() {
       expect(deck.emoji, '');
       expect(deck.items.length, greaterThanOrEqualTo(25));
       expect(deck.items, contains('Meissner Effect'));
-      expect(deck.items, contains('Superconductors Fan'));
+      expect(deck.items, contains('Superconductors Hero'));
     });
 
     test('Missing API Key throws friendly offline error without mentioning .env or Groq', () async {
@@ -152,6 +152,51 @@ void main() {
 
       // Rule 7: JSON array of strings
       expect(prompt, contains('OUTPUT REQUIREMENT: Return strictly valid JSON array of strings'));
+
+      // Rule 8: Anti-template rule
+      expect(prompt, contains('CRITICAL ANTI-TEMPLATE RULE'));
+      expect(prompt, contains("Never use the user's input topic as a mandatory prefix or suffix"));
+    });
+
+    test('parseAndBuildDeck rejects lazy templated prefixes and suffixes for MCU Avengers', () {
+      final service = GroqDeckService();
+      const rawJson = '''
+[
+  "Iron Man",
+  "Thor",
+  "Thanos",
+  "Shield",
+  "Mjolnir",
+  "Black Widow",
+  "Classic mcu avengers",
+  "Watching mcu avengers",
+  "mcu avengers Party",
+  "mcu avengers Fan",
+  "Hawkeye",
+  "Captain America",
+  "Hulk",
+  "Infinity Gauntlet",
+  "Loki"
+]
+''';
+      final deck = service.parseAndBuildDeck(
+        rawJson: rawJson,
+        fallbackTopic: 'MCU Avengers',
+        targetCardCount: 35,
+      );
+
+      expect(deck.name, 'MCU AVENGERS');
+      expect(deck.items, contains('Iron Man'));
+      expect(deck.items, contains('Thor'));
+      expect(deck.items, contains('Thanos'));
+      expect(deck.items, contains('Mjolnir'));
+      expect(deck.items, contains('Black Widow'));
+
+      // Discards lazy topic-prefixed/suffixed items
+      expect(deck.items.any((item) => item.toLowerCase() == 'classic mcu avengers'), isFalse);
+      expect(deck.items.any((item) => item.toLowerCase() == 'watching mcu avengers'), isFalse);
+      expect(deck.items.any((item) => item.toLowerCase() == 'mcu avengers party'), isFalse);
+      expect(deck.items.any((item) => item.toLowerCase() == 'mcu avengers fan'), isFalse);
     });
 
     test('cardCountForPlayers scales cards dynamically for 2 to 6 players', () {
