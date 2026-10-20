@@ -1161,7 +1161,7 @@ class _DeckStickerCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top row: pill count + pin badge + edit + favorite star
+              // Top row: pill count + optional edit + pin badge + favorite star
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -1173,7 +1173,7 @@ class _DeckStickerCard extends StatelessWidget {
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 5,
-                              vertical: 2.5,
+                              vertical: 2,
                             ),
                             decoration: BoxDecoration(
                               color: kInk,
@@ -1184,13 +1184,38 @@ class _DeckStickerCard extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.dmSans(
-                                fontSize: 10.5,
+                                fontSize: 10,
                                 fontWeight: FontWeight.w700,
                                 color: kCream,
                               ),
                             ),
                           ),
                         ),
+                        if (onEdit != null) ...[
+                          const SizedBox(width: 3),
+                          GestureDetector(
+                            onTap: onEdit,
+                            behavior: HitTestBehavior.opaque,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4.5,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: kInk.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                'Edit',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: kInk,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                         if (isPinned) ...[
                           const SizedBox(width: 3),
                           Container(
@@ -1208,12 +1233,12 @@ class _DeckStickerCard extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 const Icon(Icons.push_pin_rounded,
-                                    size: 9, color: kInk),
-                                const SizedBox(width: 1.5),
+                                    size: 8.5, color: kInk),
+                                const SizedBox(width: 1),
                                 Text(
                                   'PIN',
                                   style: GoogleFonts.bowlbyOne(
-                                    fontSize: 8.5,
+                                    fontSize: 8,
                                     color: kInk,
                                   ),
                                 ),
@@ -1224,45 +1249,20 @@ class _DeckStickerCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (onEdit != null)
-                        GestureDetector(
-                          onTap: onEdit,
-                          behavior: HitTestBehavior.opaque,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 5,
-                              vertical: 2,
-                            ),
-                            margin: const EdgeInsets.only(right: 3),
-                            decoration: BoxDecoration(
-                              color: kInk.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              'Edit',
-                              style: GoogleFonts.dmSans(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                color: kInk,
-                              ),
-                            ),
-                          ),
-                        ),
-                      GestureDetector(
-                        onTap: onFavoriteToggle,
-                        behavior: HitTestBehavior.opaque,
-                        child: Icon(
-                          isFavorite
-                              ? Icons.star_rounded
-                              : Icons.star_outline_rounded,
-                          size: 19,
-                          color: kInk,
-                        ),
+                  const SizedBox(width: 2),
+                  GestureDetector(
+                    onTap: onFavoriteToggle,
+                    behavior: HitTestBehavior.opaque,
+                    child: Padding(
+                      padding: EdgeInsets.zero,
+                      child: Icon(
+                        isFavorite
+                            ? Icons.star_rounded
+                            : Icons.star_outline_rounded,
+                        size: 18,
+                        color: kInk,
                       ),
-                    ],
+                    ),
                   ),
                 ],
               ),

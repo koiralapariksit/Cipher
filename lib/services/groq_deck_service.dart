@@ -14,9 +14,9 @@ class GroqDeckService {
   factory GroqDeckService() => _instance;
   GroqDeckService._internal();
 
-  static const String _defaultModel = 'llama-3.3-70b-versatile';
+  static const String _defaultModel = 'openai/gpt-oss-120b';
   static const List<String> _fallbackModels = [
-    'openai/gpt-oss-120b',
+    'llama-3.3-70b-versatile',
     'qwen/qwen3.8-27b',
     'openai/gpt-oss-20b',
   ];
@@ -65,6 +65,32 @@ class GroqDeckService {
   Future<void> saveApiKey(String key) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('groq_api_key', key.trim());
+  }
+
+  /// Direct, lightweight HTTP check to the Groq API endpoint (`https://api.groq.com`).
+  /// If the request returns any HTTP response (including 200, 401, 403, 404),
+  /// the network route to Groq is verified open and the device is ONLINE.
+  /// Only returns false if a SocketException, TimeoutException, or ClientException occurs.
+  Future<bool> isGroqOnline({
+    Duration timeout = const Duration(seconds: 3),
+  }) async {
+    try {
+      final uri = Uri.parse('https://api.groq.com');
+      final response = await http
+          .head(uri, headers: {'User-Agent': 'CipherApp/1.0'})
+          .timeout(timeout);
+      return response.statusCode != 0;
+    } catch (_) {
+      try {
+        final fallbackUri = Uri.parse('https://api.groq.com');
+        final response = await http
+            .get(fallbackUri, headers: {'User-Agent': 'CipherApp/1.0'})
+            .timeout(timeout);
+        return response.statusCode != 0;
+      } catch (_) {
+        return false;
+      }
+    }
   }
 
   /// Live Web Search grounding: Queries Wikipedia and DuckDuckGo for
@@ -315,7 +341,6 @@ class GroqDeckService {
             {'role': 'user', 'content': prompt},
           ],
           'temperature': temperature,
-          'response_format': {'type': 'json_object'},
         };
 
         final response = await http

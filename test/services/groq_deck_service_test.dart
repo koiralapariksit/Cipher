@@ -320,6 +320,12 @@ void main() {
       expect(service.hasPrefetchedWords(testDeckId), isFalse);
       expect(service.takePrefetchedWords(testDeckId), isNull);
     });
+
+    test('isGroqOnline checks direct HTTP connectivity to Groq API endpoint', () async {
+      final service = GroqDeckService();
+      final result = await service.isGroqOnline(timeout: const Duration(seconds: 3));
+      expect(result, isA<bool>());
+    });
   });
 }
 

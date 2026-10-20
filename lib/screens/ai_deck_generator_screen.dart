@@ -153,10 +153,21 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
       });
 
       HapticFeedback.mediumImpact();
+      final isOnline = await _groqService.isGroqOnline();
+      if (!mounted) return;
+      final String errorMessage;
+      if (!isOnline) {
+        errorMessage = 'No internet connection! Check your Wi-Fi and try again.';
+      } else if (e.toString().contains('busy')) {
+        errorMessage = 'AI generator is busy. Please try again in a moment.';
+      } else {
+        errorMessage = 'Failed to generate deck. Please try again.';
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'No internet connection! Check your Wi-Fi and try again.',
+            errorMessage,
             style: GoogleFonts.dmSans(
               fontSize: 13,
               fontWeight: FontWeight.w700,

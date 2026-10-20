@@ -137,8 +137,15 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
       _aiTopicController.clear();
       HapticFeedback.heavyImpact();
       _showSnack('Added $addedCount words from AI!');
-    } catch (_) {
-      _showSnack('No internet connection! Check your Wi-Fi and try again.');
+    } catch (e) {
+      final isOnline = await GroqDeckService().isGroqOnline();
+      if (!isOnline) {
+        _showSnack('No internet connection! Check your Wi-Fi and try again.');
+      } else if (e.toString().contains('busy')) {
+        _showSnack('AI generator is busy. Please try again in a moment.');
+      } else {
+        _showSnack('Failed to generate cards. Please try again.');
+      }
     } finally {
       if (mounted) {
         setState(() => _isAiGenerating = false);
