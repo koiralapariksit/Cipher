@@ -10,6 +10,8 @@ class Deck {
   final List<String> items;
   final bool isCustom;
   final String category;
+  final String? originalPrompt;
+  final bool isAiGenerated;
 
   const Deck({
     required this.id,
@@ -19,10 +21,18 @@ class Deck {
     required this.items,
     this.isCustom = false,
     this.category = 'General',
+    this.originalPrompt,
+    this.isAiGenerated = false,
   });
 
   /// Returns a shuffled copy of [items].
   List<String> get shuffledItems => List<String>.from(items)..shuffle();
+
+  /// Whether this deck qualifies for dynamic online refresh:
+  /// - Default starter decks: Always refreshable using their curated theme.
+  /// - AI-Generated decks: Always refreshable using the original prompt/theme.
+  /// - Purely hand-crafted user custom decks (without prompt): Protected from overwrite.
+  bool get canRefresh => !isCustom || isAiGenerated || (originalPrompt != null && originalPrompt!.isNotEmpty);
 
   Deck copyWith({
     String? id,
@@ -32,6 +42,8 @@ class Deck {
     List<String>? items,
     bool? isCustom,
     String? category,
+    String? originalPrompt,
+    bool? isAiGenerated,
   }) {
     return Deck(
       id: id ?? this.id,
@@ -41,6 +53,8 @@ class Deck {
       items: items ?? this.items,
       isCustom: isCustom ?? this.isCustom,
       category: category ?? this.category,
+      originalPrompt: originalPrompt ?? this.originalPrompt,
+      isAiGenerated: isAiGenerated ?? this.isAiGenerated,
     );
   }
 
@@ -53,6 +67,8 @@ class Deck {
       'items': items,
       'isCustom': isCustom,
       'category': category,
+      if (originalPrompt != null) 'originalPrompt': originalPrompt,
+      'isAiGenerated': isAiGenerated,
     };
   }
 
@@ -70,6 +86,8 @@ class Deck {
           [],
       isCustom: map['isCustom'] as bool? ?? true,
       category: map['category'] as String? ?? 'Custom',
+      originalPrompt: map['originalPrompt'] as String?,
+      isAiGenerated: map['isAiGenerated'] as bool? ?? false,
     );
   }
 

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -222,11 +223,85 @@ class GroqDeckService {
     return deck;
   }
 
+  // In-memory background pre-fetch cache: deckId -> fresh items list
+  final Map<String, List<String>> _prefetchedDeckWords = {};
+
+  bool hasPrefetchedWords(String deckId) =>
+      _prefetchedDeckWords.containsKey(deckId) &&
+      _prefetchedDeckWords[deckId]!.isNotEmpty;
+
+  List<String>? takePrefetchedWords(String deckId) =>
+      _prefetchedDeckWords.remove(deckId);
+
+  /// Generates fresh, non-repetitive charades words for an existing deck.
+  /// Throws an exception on network failure, missing key, or timeout
+  /// so caller can seamlessly fallback to cached items.
+  Future<List<String>> generateFreshWordsForDeck(
+    Deck deck, {
+    Duration timeout = const Duration(milliseconds: 2800),
+  }) async {
+    final apiKey = await getApiKey();
+    if (apiKey == null || apiKey.isEmpty) {
+      throw Exception('AI deck generator is currently offline.');
+    }
+
+    final topic = (deck.originalPrompt != null && deck.originalPrompt!.isNotEmpty)
+        ? deck.originalPrompt!
+        : (deck.category.isNotEmpty && deck.category != 'Custom' && deck.category != 'General'
+            ? '${deck.name} (${deck.category})'
+            : deck.name);
+
+    final targetCount = math.max(35, deck.items.length);
+    final prompt = _buildPrompt(
+      topic: topic,
+      cardCount: targetCount,
+      difficulty: 'Party',
+      webSearchSnippets: 'Focus strictly on fresh, lively charades cards for "$topic".',
+    );
+
+    final rawJson = await _executeGroqCompletion(
+      apiKey: apiKey,
+      prompt: prompt,
+      temperature: 0.85,
+      timeout: timeout,
+    );
+
+    final parsedDeck = _parseAndBuildDeck(
+      rawJson: rawJson,
+      fallbackTopic: topic,
+      targetCardCount: targetCount,
+    );
+
+    if (parsedDeck.items.isEmpty) {
+      throw Exception('No fresh items generated.');
+    }
+
+    return parsedDeck.items;
+  }
+
+  /// Silently pre-fetches the next fresh batch of words in the background.
+  Future<void> prefetchFreshWords(Deck deck) async {
+    if (!deck.canRefresh) return;
+    try {
+      final words = await generateFreshWordsForDeck(
+        deck,
+        timeout: const Duration(seconds: 15),
+      );
+      if (words.isNotEmpty) {
+        _prefetchedDeckWords[deck.id] = words;
+      }
+    } catch (_) {
+      // Silently ignore background prefetch errors
+    }
+  }
+
   /// Executes chat completion with Groq, falling back gracefully if the
   /// target model was decommissioned or not accessible.
   Future<String> _executeGroqCompletion({
     required String apiKey,
     required String prompt,
+    double temperature = 0.85,
+    Duration timeout = const Duration(seconds: 25),
     void Function(String step)? onProgress,
   }) async {
     final candidateModels = [_defaultModel, ..._fallbackModels];
@@ -239,7 +314,7 @@ class GroqDeckService {
           'messages': [
             {'role': 'user', 'content': prompt},
           ],
-          'temperature': 0.2,
+          'temperature': temperature,
           'response_format': {'type': 'json_object'},
         };
 
@@ -252,7 +327,7 @@ class GroqDeckService {
               },
               body: jsonEncode(payload),
             )
-            .timeout(const Duration(seconds: 25));
+            .timeout(timeout);
 
         if (response.statusCode == 200) {
           final data = jsonDecode(utf8.decode(response.bodyBytes))
@@ -303,14 +378,15 @@ class GroqDeckService {
         'AI deck generator is currently offline. Please try again later.');
   }
 
-  /// Builds the prompt according to the strict party charades specification.
+  /// Builds the prompt according to the strict commercial Forehead Charades ("Heads Up!") specification.
   String _buildPrompt({
     required String topic,
     required int cardCount,
     required String difficulty,
     required String webSearchSnippets,
   }) {
-    return '''You are a party charades deck generator for "Cipher". Always generate between 25 and 35 actable, fun words or short phrases.
+    return '''You are an expert party game designer for a forehead charades game like 'Heads Up!'. Every card you generate MUST be immediately actable, mimeable, imitatable with sound effects/impressions, or describable with fast verbal clues under a 60-second timer.
+
 Target Topic: "$topic"
 Target Count: $cardCount
 Target Difficulty: "$difficulty"
@@ -318,12 +394,14 @@ Target Difficulty: "$difficulty"
 LIVE WEB / ENCYCLOPEDIC CONTEXT:
 $webSearchSnippets
 
-RULES:
-1. DECK NAME SUMMARIZATION RULE: If the user inputs a long sentence, query, or detailed description (e.g. "60s-90s pop song mainly mj qeen beatles"), automatically summarize the core theme into a punchy, 1-word or 2-word UPPERCASE deck name (e.g. "LEGENDS" or "POP") for the "name" field. Never use raw long sentences or verbose queries as the deck title.
-2. CRITICAL SAFETY RULE: This game is played by children and families. Strictly prohibit any pornographic, adult, 18+, explicit, drug-related, violent, or harmful content. If a user requests restricted content, fallback to safe family-friendly pop culture, movies, web series, celebrities, or general party words. Content must be 100% kid-friendly.
-3. Even if the user enters a very difficult, obscure, narrow, or single-word topic, creatively expand into related concepts, famous examples, actions, tropes, and associations connected to that topic so you ALWAYS output at least 25 distinct items.
-4. Every item must be fun, recognizable, and great for guessing/acting in a party setting.
-5. Output strictly valid JSON with no markdown wrappers.
+STRICT CARD RULES:
+1. Length: Strictly 1 to 3 words per card (e.g., 'T-Rex', 'Michael Jackson', 'Slipping on Ice', 'Harry Potter'). Never output long sentences or explanations.
+2. Concrete & Visual Only: Only output recognizable people, characters, animals, objects, foods, iconic titles, or funny physical actions. NEVER output abstract concepts, dates, or obscure trivia.
+3. Party Pacing Mix: 70% universally recognizable crowd-pleasers that everyone in the room knows immediately, and 30% hilarious physical actions or iconic tropes within the topic.
+4. Child-Safe Guardrail: Strictly 100% family-friendly. Zero 18+, pornographic, drug, or harmful content. If user requests adult or violent content, fallback to safe party pop culture, animals, or movies.
+5. Variety: Use high creativity (temperature 0.85) and vary sub-angles so repeated generations for the same topic produce fresh, non-repetitive sets of 35–40 cards.
+6. DECK NAME SUMMARIZATION RULE: If the user inputs a long sentence, query, or detailed description (e.g. "60s-90s pop song mainly mj qeen beatles"), automatically summarize the core theme into a punchy, 1-word or 2-word UPPERCASE deck name (e.g. "LEGENDS" or "POP") for the "name" field. Never use raw long sentences or verbose queries as the deck title.
+7. Output strictly valid JSON with no markdown wrappers.
 
 OUTPUT SCHEMA (RAW JSON OBJECT ONLY):
 {
@@ -345,6 +423,20 @@ OUTPUT SCHEMA (RAW JSON OBJECT ONLY):
         rawJson: rawJson,
         fallbackTopic: fallbackTopic,
         targetCardCount: targetCardCount,
+      );
+
+  @visibleForTesting
+  String buildPrompt({
+    required String topic,
+    required int cardCount,
+    required String difficulty,
+    required String webSearchSnippets,
+  }) =>
+      _buildPrompt(
+        topic: topic,
+        cardCount: cardCount,
+        difficulty: difficulty,
+        webSearchSnippets: webSearchSnippets,
       );
 
   static String _summarizeDeckTitle(String rawTitle, String fallbackTopic) {
@@ -475,6 +567,8 @@ OUTPUT SCHEMA (RAW JSON OBJECT ONLY):
       colorValue: colorValue,
       isCustom: true,
       items: sanitizedItems,
+      originalPrompt: fallbackTopic,
+      isAiGenerated: true,
     );
   }
 

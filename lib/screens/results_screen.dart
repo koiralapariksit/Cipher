@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/deck.dart';
 import '../models/game_round.dart';
+import '../services/groq_deck_service.dart';
 import '../services/storage_service.dart';
 import '../theme/deck_colors.dart';
 import 'gameplay_screen.dart';
@@ -59,10 +60,18 @@ class _ResultsScreenState extends State<ResultsScreen> {
   }
 
   void _playAgain() {
+    Deck deckToPlay = _storage.getDeck(_resolvedDeck.id);
+    if (GroqDeckService().hasPrefetchedWords(_resolvedDeck.id)) {
+      final prefetched = GroqDeckService().takePrefetchedWords(_resolvedDeck.id);
+      if (prefetched != null && prefetched.isNotEmpty) {
+        _storage.updateDeckItems(_resolvedDeck.id, prefetched);
+        deckToPlay = deckToPlay.copyWith(items: prefetched);
+      }
+    }
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => GameplayScreen(
-          deck: _resolvedDeck,
+          deck: deckToPlay,
           timerSeconds: widget.round.timerDuration,
         ),
       ),

@@ -7,6 +7,7 @@ import '../models/deck.dart';
 import '../models/game_round.dart';
 import '../services/argon_sensor_engine.dart';
 import '../services/game_controller.dart';
+import '../services/groq_deck_service.dart';
 import '../services/storage_service.dart';
 import '../theme/deck_colors.dart';
 import 'results_screen.dart';
@@ -199,6 +200,9 @@ class _GameplayScreenState extends State<GameplayScreen>
 
     // Persist round history
     _storage.addRoundHistory(round);
+
+    // Silently pre-fetch the next fresh batch for this deck in the background
+    GroqDeckService().prefetchFreshWords(widget.deck);
 
     // Brief delay so player sees completion screen
     Future.delayed(const Duration(milliseconds: 400), () {

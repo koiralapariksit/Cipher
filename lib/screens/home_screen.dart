@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/deck.dart';
+import '../services/groq_deck_service.dart';
 import '../services/storage_service.dart';
 import '../theme/deck_colors.dart';
 import 'ai_deck_generator_screen.dart';
@@ -42,17 +43,141 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  bool _isShufflingDeck = false;
+
   void _onStorageUpdate() {
     if (mounted) setState(() {});
   }
 
-  void _onDeckTap(Deck deck) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) =>
-            GameplayScreen(deck: deck, timerSeconds: _selectedTimer),
+  Future<void> _onDeckTap(Deck deck) async {
+    if (_isShufflingDeck) return;
+
+    // 1. If deck cannot be refreshed (e.g. handmade custom deck), launch immediately
+    if (!deck.canRefresh) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) =>
+              GameplayScreen(deck: deck, timerSeconds: _selectedTimer),
+        ),
+      );
+      return;
+    }
+
+    // 2. If pre-fetched words already exist in memory, use them immediately
+    if (GroqDeckService().hasPrefetchedWords(deck.id)) {
+      final prefetched = GroqDeckService().takePrefetchedWords(deck.id);
+      if (prefetched != null && prefetched.isNotEmpty) {
+        await _storage.updateDeckItems(deck.id, prefetched);
+        if (!mounted) return;
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => GameplayScreen(
+              deck: deck.copyWith(items: prefetched),
+              timerSeconds: _selectedTimer,
+            ),
+          ),
+        );
+        return;
+      }
+    }
+
+    // 3. Online fresh generation with strict 2800ms timeout & seamless offline fallback
+    _isShufflingDeck = true;
+
+    // Show Neo-Brutalist loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: kInk.withValues(alpha: 0.65),
+      builder: (dialogCtx) => PopScope(
+        canPop: false,
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 26),
+            decoration: BoxDecoration(
+              color: kInk,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: kYellow, width: 3.5),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0xFF000000),
+                  offset: Offset(5, 5),
+                  blurRadius: 0,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 4,
+                    valueColor: AlwaysStoppedAnimation<Color>(kYellow),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'SHUFFLING FRESH CARDS...',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.bowlbyOne(
+                    fontSize: 18,
+                    color: kYellow,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Curating actable charades for ${deck.name}',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: kCream,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
+
+    Deck deckToLaunch = deck;
+    try {
+      final freshWords = await GroqDeckService().generateFreshWordsForDeck(
+        deck,
+        timeout: const Duration(milliseconds: 2800),
+      );
+      if (freshWords.isNotEmpty) {
+        await _storage.updateDeckItems(deck.id, freshWords);
+        deckToLaunch = deck.copyWith(items: freshWords);
+      }
+    } catch (_) {
+      // Seamless offline / timeout fallback: launch with cached items without error dialog
+      deckToLaunch = deck.copyWith(items: deck.shuffledItems);
+    } finally {
+      if (mounted) {
+        // Dismiss loading dialog safely
+        Navigator.of(context, rootNavigator: true).pop();
+        _isShufflingDeck = false;
+        // Launch gameplay
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => GameplayScreen(
+              deck: deckToLaunch,
+              timerSeconds: _selectedTimer,
+            ),
+          ),
+        );
+      } else {
+        _isShufflingDeck = false;
+      }
+    }
   }
 
   void _onSurpriseMe() {

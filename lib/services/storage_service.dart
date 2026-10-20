@@ -82,6 +82,7 @@ class StorageService with ChangeNotifier {
   StorageService._internal();
 
   static const String _keyCustomDecks = 'custom_decks_v2';
+  static const String _keyRefreshedStarterDecks = 'refreshed_starter_decks_v2';
   static const String _keySettings = 'app_settings_v2';
   static const String _keyPinned = 'pinned_deck_ids_v2';
   static const String _keyFavorites = 'favorite_deck_ids_v2';
@@ -90,6 +91,7 @@ class StorageService with ChangeNotifier {
   SharedPreferences? _prefs;
 
   List<Deck> _customDecks = [];
+  Map<String, List<String>> _refreshedStarterDeckWords = {};
   Set<String> _pinnedDeckIds = {};
   Set<String> _favoriteDeckIds = {};
   List<GameRound> _roundHistory = [];
@@ -104,8 +106,33 @@ class StorageService with ChangeNotifier {
   List<GameRound> get roundHistory => List.unmodifiable(_roundHistory);
   AppSettings get settings => _settings;
 
-  /// Returns built-in starter decks + user-created custom decks.
-  List<Deck> get allDecks => [...Deck.starterDecks, ..._customDecks];
+  /// Returns built-in starter decks (with any online refreshed words) + user-created custom decks.
+  List<Deck> get allDecks {
+    final starters = Deck.starterDecks.map((d) {
+      if (_refreshedStarterDeckWords.containsKey(d.id)) {
+        return d.copyWith(items: _refreshedStarterDeckWords[d.id]);
+      }
+      return d;
+    }).toList();
+    return [...starters, ..._customDecks];
+  }
+
+  /// Retrieves a deck by [deckId], incorporating any cached refreshed words.
+  Deck getDeck(String deckId) {
+    final customIndex = _customDecks.indexWhere((d) => d.id == deckId);
+    if (customIndex >= 0) {
+      return _customDecks[customIndex];
+    }
+    final starterIndex = Deck.starterDecks.indexWhere((d) => d.id == deckId);
+    if (starterIndex >= 0) {
+      final starter = Deck.starterDecks[starterIndex];
+      if (_refreshedStarterDeckWords.containsKey(deckId)) {
+        return starter.copyWith(items: _refreshedStarterDeckWords[deckId]);
+      }
+      return starter;
+    }
+    return Deck.starterDecks.first;
+  }
 
   /// Initialize and load all stored data.
   Future<void> init({bool force = false}) async {
@@ -133,6 +160,19 @@ class StorageService with ChangeNotifier {
           return null;
         }
       }).whereType<Deck>().toList();
+    }
+
+    // 2b. Refreshed Starter Decks
+    final refreshedStartersJson = _prefs?.getString(_keyRefreshedStarterDecks);
+    if (refreshedStartersJson != null) {
+      try {
+        final decoded = json.decode(refreshedStartersJson) as Map<String, dynamic>;
+        _refreshedStarterDeckWords = decoded.map(
+          (k, v) => MapEntry(k, (v as List<dynamic>).map((e) => e.toString()).toList()),
+        );
+      } catch (e) {
+        debugPrint('Error loading refreshed starter decks: $e');
+      }
     }
 
     // 3a. Pinned Decks (Strict Max 2)
@@ -193,11 +233,31 @@ class StorageService with ChangeNotifier {
   /// Alias for saving user-created or imported custom decks.
   Future<void> saveCustomDeck(Deck deck) => saveDeck(deck);
 
+  /// Updates the items of a starter deck or custom/AI deck with freshly generated items.
+  Future<void> updateDeckItems(String deckId, List<String> newItems) async {
+    final isStarter = Deck.starterDecks.any((d) => d.id == deckId);
+    if (isStarter) {
+      _refreshedStarterDeckWords[deckId] = List.unmodifiable(newItems);
+      await _persistRefreshedStarterDecks();
+      notifyListeners();
+      return;
+    }
+
+    final index = _customDecks.indexWhere((d) => d.id == deckId);
+    if (index >= 0) {
+      _customDecks[index] = _customDecks[index].copyWith(items: newItems);
+      await _persistCustomDecks();
+      notifyListeners();
+    }
+  }
+
   Future<void> deleteDeck(String deckId) async {
     _customDecks.removeWhere((d) => d.id == deckId);
+    _refreshedStarterDeckWords.remove(deckId);
     _pinnedDeckIds.remove(deckId);
     _favoriteDeckIds.remove(deckId);
     await _persistCustomDecks();
+    await _persistRefreshedStarterDecks();
     await _persistPinned();
     await _persistFavorites();
     notifyListeners();
@@ -206,6 +266,11 @@ class StorageService with ChangeNotifier {
   Future<void> _persistCustomDecks() async {
     final list = _customDecks.map((d) => json.encode(d.toJson())).toList();
     await _prefs?.setStringList(_keyCustomDecks, list);
+  }
+
+  Future<void> _persistRefreshedStarterDecks() async {
+    final jsonStr = json.encode(_refreshedStarterDeckWords);
+    await _prefs?.setString(_keyRefreshedStarterDecks, jsonStr);
   }
 
   // ── Pinned Decks (Strict Max 2 Pinned) ──────────────────────────────────
