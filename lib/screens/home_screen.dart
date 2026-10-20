@@ -1161,7 +1161,7 @@ class _DeckStickerCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top row: pill count + optional edit + pin badge + favorite star
+              // Top row: [Edit Badge + PIN Badge] <-> [Favorite Star Icon]
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -1169,37 +1169,14 @@ class _DeckStickerCard extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Flexible(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 5,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: kInk,
-                              borderRadius: BorderRadius.circular(99),
-                            ),
-                            child: Text(
-                              '${deck.items.length} cards',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.dmSans(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: kCream,
-                              ),
-                            ),
-                          ),
-                        ),
-                        if (onEdit != null) ...[
-                          const SizedBox(width: 3),
+                        if (onEdit != null)
                           GestureDetector(
                             onTap: onEdit,
                             behavior: HitTestBehavior.opaque,
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 4.5,
-                                vertical: 2,
+                                horizontal: 6,
+                                vertical: 2.5,
                               ),
                               decoration: BoxDecoration(
                                 color: kInk.withValues(alpha: 0.15),
@@ -1208,20 +1185,19 @@ class _DeckStickerCard extends StatelessWidget {
                               child: Text(
                                 'Edit',
                                 style: GoogleFonts.dmSans(
-                                  fontSize: 10,
+                                  fontSize: 10.5,
                                   fontWeight: FontWeight.w800,
                                   color: kInk,
                                 ),
                               ),
                             ),
                           ),
-                        ],
                         if (isPinned) ...[
-                          const SizedBox(width: 3),
+                          if (onEdit != null) const SizedBox(width: 4),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 1.5,
+                              horizontal: 5,
+                              vertical: 2,
                             ),
                             decoration: BoxDecoration(
                               color: kYellow,
@@ -1233,12 +1209,12 @@ class _DeckStickerCard extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 const Icon(Icons.push_pin_rounded,
-                                    size: 8.5, color: kInk),
-                                const SizedBox(width: 1),
+                                    size: 9, color: kInk),
+                                const SizedBox(width: 2),
                                 Text(
                                   'PIN',
                                   style: GoogleFonts.bowlbyOne(
-                                    fontSize: 8,
+                                    fontSize: 8.5,
                                     color: kInk,
                                   ),
                                 ),
@@ -1249,7 +1225,7 @@ class _DeckStickerCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 2),
+                  const SizedBox(width: 4),
                   GestureDetector(
                     onTap: onFavoriteToggle,
                     behavior: HitTestBehavior.opaque,
@@ -1259,7 +1235,7 @@ class _DeckStickerCard extends StatelessWidget {
                         isFavorite
                             ? Icons.star_rounded
                             : Icons.star_outline_rounded,
-                        size: 18,
+                        size: 20,
                         color: kInk,
                       ),
                     ),

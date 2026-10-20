@@ -144,14 +144,36 @@ void main() {
       // Rule 3: 1 to 3 words
       expect(prompt, contains('EXACT FORMATTING: 1 to 3 words maximum per card'));
 
-      // Rule 4: Count & variety
-      expect(prompt, contains('COUNT & VARIETY'));
+      // Rule 4: Count & anti-repetition
+      expect(prompt, contains('COUNT & ANTI-REPETITION'));
 
       // Rule 5: Child-Safe guardrail
       expect(prompt, contains('CHILD-SAFE GUARDRAIL: Strictly 100% family-friendly'));
 
       // Rule 7: JSON array of strings
       expect(prompt, contains('OUTPUT REQUIREMENT: Return strictly valid JSON array of strings'));
+    });
+
+    test('cardCountForPlayers scales cards dynamically for 2 to 6 players', () {
+      expect(GroqDeckService.cardCountForPlayers(2), 40);
+      expect(GroqDeckService.cardCountForPlayers(3), 60);
+      expect(GroqDeckService.cardCountForPlayers(4), 80);
+      expect(GroqDeckService.cardCountForPlayers(5), 100);
+      expect(GroqDeckService.cardCountForPlayers(6), 120);
+    });
+
+    test('buildPrompt includes dynamic player count scaling instruction', () {
+      final service = GroqDeckService();
+      final prompt = service.buildPrompt(
+        topic: '90s Rock Bands',
+        cardCount: 80,
+        difficulty: 'Party',
+        webSearchSnippets: 'Rock bands',
+        playerCount: 4,
+      );
+
+      expect(prompt, contains('scaled dynamically for 4 players with strict anti-repetition'));
+      expect(prompt, contains('Target Count: 80'));
     });
 
     test('parseAndBuildDeck correctly parses JSON array of entity names for Marvel without powers', () {

@@ -19,13 +19,18 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
   final TextEditingController _topicController = TextEditingController();
   final GroqDeckService _groqService = GroqDeckService();
 
-  int _selectedCardCount = 25;
+  int _selectedPlayers = 4;
   String _selectedVibe = 'Party';
   bool _isGenerating = false;
   String _loadingMessage = 'Encrypting Deck...';
 
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
+
+  static const List<int> _playerOptions = [2, 3, 4, 5, 6];
+
+  int get _calculatedCardCount =>
+      GroqDeckService.cardCountForPlayers(_selectedPlayers);
 
   static const List<String> _suggestions = [
     '90s Rock Bands',
@@ -39,8 +44,6 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
     'Superheroes',
     'Sitcom Quotes',
   ];
-
-  static const List<int> _cardCounts = [15, 25, 40, 50];
 
   static const List<({String label, String subtitle, IconData icon})> _vibes = [
     (
@@ -126,8 +129,9 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
     try {
       final deck = await _groqService.generateDeck(
         topic: topic,
-        cardCount: _selectedCardCount,
+        cardCount: _calculatedCardCount,
         difficulty: _selectedVibe,
+        playerCount: _selectedPlayers,
         onProgress: (step) {
           if (mounted) {
             setState(() => _loadingMessage = step);
@@ -311,14 +315,14 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
             children: [
               // ── Custom Neo-Brutalist Header ──
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
                 child: Row(
                   children: [
                     GestureDetector(
                       onTap: () => Navigator.of(context).pop(),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 7),
+                            horizontal: 13, vertical: 7),
                         decoration: BoxDecoration(
                           color: kInk,
                           borderRadius: BorderRadius.circular(99),
@@ -328,40 +332,45 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
                         child: Text(
                           '✕ BACK',
                           style: GoogleFonts.bowlbyOne(
-                            fontSize: 13,
+                            fontSize: 12.5,
                             color: kCream,
                             letterSpacing: 0.5,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Transform.rotate(
-                      angle: -2 * math.pi / 180,
-                      child: RichText(
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: 'AI Generator',
-                              style: GoogleFonts.bowlbyOne(
-                                fontSize: 28,
-                                color: kCream,
-                                height: 0.95,
-                              ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Transform.rotate(
+                          angle: -2 * math.pi / 180,
+                          child: RichText(
+                            text: TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: 'AI Generator',
+                                  style: GoogleFonts.bowlbyOne(
+                                    fontSize: 26,
+                                    color: kCream,
+                                    height: 0.95,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: '!',
+                                  style: GoogleFonts.bowlbyOne(
+                                    fontSize: 26,
+                                    color: kYellow,
+                                    height: 0.95,
+                                  ),
+                                ),
+                              ],
                             ),
-                            TextSpan(
-                              text: '!',
-                              style: GoogleFonts.bowlbyOne(
-                                fontSize: 28,
-                                color: kYellow,
-                                height: 0.95,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
-                    const Spacer(),
                   ],
                 ),
               ),
@@ -504,12 +513,12 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
                     _buildSectionHeader('PARAMETERS', kLime),
                     const SizedBox(height: 12),
 
-                    // Card Count Selector
+                    // Player Count Selector (2 to 6 Players, Dynamic Card Scaling)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'CARD COUNT',
+                          'PLAYERS',
                           style: GoogleFonts.bowlbyOne(
                             fontSize: 11,
                             color: kCream,
@@ -525,9 +534,9 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
                             border: Border.all(color: kInk, width: 1.5),
                           ),
                           child: Text(
-                            '$_selectedCardCount Cards',
+                            '$_selectedPlayers Players (~$_calculatedCardCount Cards)',
                             style: GoogleFonts.bowlbyOne(
-                              fontSize: 11,
+                              fontSize: 10.5,
                               color: kInk,
                             ),
                           ),
@@ -537,18 +546,18 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
                     const SizedBox(height: 8),
 
                     Row(
-                      children: _cardCounts.map((count) {
-                        final isSelected = _selectedCardCount == count;
+                      children: _playerOptions.map((players) {
+                        final isSelected = _selectedPlayers == players;
                         return Expanded(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 3),
                             child: GestureDetector(
                               onTap: _isGenerating
                                   ? null
                                   : () {
                                       HapticFeedback.selectionClick();
                                       setState(
-                                          () => _selectedCardCount = count);
+                                          () => _selectedPlayers = players);
                                     },
                               child: Container(
                                 height: 42,
@@ -560,9 +569,9 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
                                 ),
                                 alignment: Alignment.center,
                                 child: Text(
-                                  '$count',
+                                  '${players}P',
                                   style: GoogleFonts.bowlbyOne(
-                                    fontSize: 14,
+                                    fontSize: 13.5,
                                     color: kInk,
                                   ),
                                 ),

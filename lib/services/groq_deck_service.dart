@@ -21,6 +21,20 @@ class GroqDeckService {
     'openai/gpt-oss-20b',
   ];
 
+  /// Maps player counts (2 to 6) to recommended target card quantities:
+  /// 2 Players -> 40 cards
+  /// 3 Players -> 60 cards
+  /// 4 Players -> 80 cards
+  /// 5 Players -> 100 cards
+  /// 6 Players -> 120 cards
+  static int cardCountForPlayers(int players) {
+    if (players <= 2) return 40;
+    if (players == 3) return 60;
+    if (players == 4) return 80;
+    if (players == 5) return 100;
+    return 120; // 6+ players
+  }
+
   static const String _groqCompletionsUrl =
       'https://api.groq.com/openai/v1/chat/completions';
 
@@ -200,12 +214,17 @@ class GroqDeckService {
     required String topic,
     required int cardCount,
     required String difficulty,
+    int? playerCount,
     void Function(String step)? onProgress,
   }) async {
     final cleanTopic = topic.trim();
     if (cleanTopic.isEmpty) {
       throw Exception('Please specify a deck topic.');
     }
+
+    final effectiveCardCount = playerCount != null
+        ? cardCountForPlayers(playerCount)
+        : cardCount;
 
     // Phase 1: Retrieve API Key
     final apiKey = await getApiKey();
@@ -222,9 +241,10 @@ class GroqDeckService {
     // Phase 3: Construct Exact Grounding Prompt
     final prompt = _buildPrompt(
       topic: cleanTopic,
-      cardCount: cardCount,
+      cardCount: effectiveCardCount,
       difficulty: difficulty,
       webSearchSnippets: webSearchSnippets,
+      playerCount: playerCount,
     );
 
     // Phase 4: Query Groq API with Model Resilience Fallback
@@ -240,7 +260,7 @@ class GroqDeckService {
     final deck = _parseAndBuildDeck(
       rawJson: responseContent,
       fallbackTopic: cleanTopic,
-      targetCardCount: cardCount,
+      targetCardCount: effectiveCardCount,
     );
 
     // Persist to local storage
@@ -409,11 +429,15 @@ class GroqDeckService {
     required int cardCount,
     required String difficulty,
     required String webSearchSnippets,
+    int? playerCount,
   }) {
+    final playerContext = playerCount != null
+        ? ' (scaled dynamically for $playerCount players with strict anti-repetition)'
+        : '';
     return '''You are an elite party game director creating cards for 'Heads Up!', a fast-paced forehead charades guessing game. Every single item you generate must be something a player can instantly mime, describe, or name in under 3 seconds.
 
 Target Topic: "$topic"
-Target Count: $cardCount
+Target Count: $cardCount$playerContext
 Target Difficulty: "$difficulty"
 
 LIVE WEB / ENCYCLOPEDIC CONTEXT:
@@ -423,7 +447,7 @@ STRICT ENTITY-ONLY RULES:
 1. NO DESCRIPTIONS OR POWERS: Never output abstract concepts, emotions, or character powers (e.g., DO NOT output 'hulk rage', 'spidey sense', 'time travel'). Output the actual character name instead (e.g., 'Hulk', 'Spider-Man', 'Doctor Strange').
 2. NO HISTORY OR SUMMARIES: If the user asks for a political topic (e.g., 'Nepali parliament members' or 'Nepali politicians'), output real, well-known names of politicians or political figures (e.g., 'KP Sharma Oli', 'Sher Bahadur Deuba', 'Pushpa Kamal Dahal'), never explanations of elections or parliament procedures.
 3. EXACT FORMATTING: 1 to 3 words maximum per card. Pure nouns, names, titles, movies, or concrete actions.
-4. COUNT & VARIETY: Generate $cardCount unique, highly recognizable items per request. Ensure zero duplicates and high variety.
+4. COUNT & ANTI-REPETITION: Generate strictly $cardCount unique, highly recognizable items per request. Ensure zero duplicates, distinct sub-themes, and high variety.
 5. CHILD-SAFE GUARDRAIL: Strictly 100% family-friendly. Zero 18+, pornographic, drug, or harmful content. If user requests adult or violent content, fallback to safe party pop culture, animals, or movies.
 6. DECK NAME SUMMARIZATION RULE: Automatically summarize the core theme into a punchy, 1-word or 2-word UPPERCASE deck name (e.g. 'LEGENDS' or 'POP').
 7. OUTPUT REQUIREMENT: Return strictly valid JSON array of strings (["Item 1", "Item 2", ...]) with no markdown code block wrappers if possible, or clean JSON text.
@@ -448,12 +472,14 @@ STRICT ENTITY-ONLY RULES:
     required int cardCount,
     required String difficulty,
     required String webSearchSnippets,
+    int? playerCount,
   }) =>
       _buildPrompt(
         topic: topic,
         cardCount: cardCount,
         difficulty: difficulty,
         webSearchSnippets: webSearchSnippets,
+        playerCount: playerCount,
       );
 
   static String _summarizeDeckTitle(String rawTitle, String fallbackTopic) {

@@ -281,37 +281,38 @@ class _GameplayScreenState extends State<GameplayScreen>
               ),
             ),
 
-          // Subtle tilt hint at bottom
-          Positioned(
-            bottom: 10,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: IgnorePointer(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: kInk,
-                    borderRadius: BorderRadius.circular(99),
-                    border: Border.all(color: kInk, width: 1.5),
-                    boxShadow: kSmallShadow,
-                  ),
-                  child: Text(
-                    _storage.settings.invertTilt
-                        ? 'TILT DOWN = GOT IT!  •  TILT UP = PASS'
-                        : 'TILT DOWN = PASS  •  TILT UP = GOT IT!',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 11,
-                      color: kCream,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.8,
+          // Subtle tilt hint at bottom - strictly during pre-game countdown (3-2-1) only
+          if (_controller.phase == GamePhase.countdown)
+            Positioned(
+              bottom: 10,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: IgnorePointer(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: kInk,
+                      borderRadius: BorderRadius.circular(99),
+                      border: Border.all(color: kInk, width: 1.5),
+                      boxShadow: kSmallShadow,
+                    ),
+                    child: Text(
+                      _storage.settings.invertTilt
+                          ? 'TILT DOWN = GOT IT!  •  TILT UP = PASS'
+                          : 'TILT DOWN = PASS  •  TILT UP = GOT IT!',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 11,
+                        color: kCream,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
 
           // Full-screen Paused Modal Overlay
           if (_controller.phase == GamePhase.paused) _buildPauseOverlay(),
