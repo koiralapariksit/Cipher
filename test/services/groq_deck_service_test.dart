@@ -115,7 +115,7 @@ void main() {
       expect(deck.items.any((item) => item.contains('xxx') || item.contains('porn')), isFalse);
     });
 
-    test('buildPrompt includes all 5 Forehead Charades / Heads Up game design rules', () {
+    test('buildPrompt includes all strict Forehead Charades / Heads Up game design rules', () {
       final service = GroqDeckService();
       final prompt = service.buildPrompt(
         topic: 'Blockbuster Movies',
@@ -124,17 +124,120 @@ void main() {
         webSearchSnippets: 'Top movies',
       );
 
-      // Rule 1: 1 to 3 words
-      expect(prompt, contains('Strictly 1 to 3 words per card'));
-      // Rule 2: Concrete & visual only
-      expect(prompt, contains('Concrete & Visual Only'));
-      // Rule 3: 70/30 party pacing mix
-      expect(prompt, contains('Party Pacing Mix: 70% universally recognizable crowd-pleasers'));
-      expect(prompt, contains('30% hilarious physical actions'));
-      // Rule 4: Family-friendly child safety guardrail
-      expect(prompt, contains('Child-Safe Guardrail: Strictly 100% family-friendly'));
-      // Rule 5: High creativity (temp 0.85)
-      expect(prompt, contains('temperature 0.85'));
+      // System Role
+      expect(prompt, contains("You are an elite party game director creating cards for 'Heads Up!'"));
+      expect(prompt, contains('fast-paced forehead charades guessing game'));
+
+      // Rule 1: No descriptions or powers, actual character names
+      expect(prompt, contains('NO DESCRIPTIONS OR POWERS'));
+      expect(prompt, contains('Never output abstract concepts, emotions, or character powers'));
+      expect(prompt, contains('Hulk'));
+      expect(prompt, contains('Spider-Man'));
+
+      // Rule 2: No history or summaries, real politician names
+      expect(prompt, contains('NO HISTORY OR SUMMARIES'));
+      expect(prompt, contains('real, well-known names of politicians or political figures'));
+      expect(prompt, contains('KP Sharma Oli'));
+      expect(prompt, contains('Sher Bahadur Deuba'));
+      expect(prompt, contains('Pushpa Kamal Dahal'));
+
+      // Rule 3: 1 to 3 words
+      expect(prompt, contains('EXACT FORMATTING: 1 to 3 words maximum per card'));
+
+      // Rule 4: Count & variety
+      expect(prompt, contains('COUNT & VARIETY'));
+
+      // Rule 5: Child-Safe guardrail
+      expect(prompt, contains('CHILD-SAFE GUARDRAIL: Strictly 100% family-friendly'));
+
+      // Rule 7: JSON array of strings
+      expect(prompt, contains('OUTPUT REQUIREMENT: Return strictly valid JSON array of strings'));
+    });
+
+    test('parseAndBuildDeck correctly parses JSON array of entity names for Marvel without powers', () {
+      final service = GroqDeckService();
+      const rawJson = '''
+[
+  "Spider-Man",
+  "Iron Man",
+  "Thor",
+  "Captain America",
+  "Black Panther",
+  "Loki",
+  "Doctor Strange",
+  "Groot",
+  "Rocket Raccoon",
+  "Thanos",
+  "Deadpool",
+  "Wolverine",
+  "Hulk",
+  "Hawkeye",
+  "Black Widow",
+  "how to do hulk rage",
+  "spidey sense power of spider"
+]
+''';
+      final deck = service.parseAndBuildDeck(
+        rawJson: rawJson,
+        fallbackTopic: 'Marvel',
+        targetCardCount: 35,
+      );
+
+      expect(deck.name, 'MARVEL');
+      expect(deck.items, contains('Spider-Man'));
+      expect(deck.items, contains('Iron Man'));
+      expect(deck.items, contains('Thor'));
+      expect(deck.items, contains('Captain America'));
+      expect(deck.items, contains('Black Panther'));
+      expect(deck.items, contains('Loki'));
+      expect(deck.items, contains('Doctor Strange'));
+      expect(deck.items, contains('Hulk'));
+
+      // Verifies abstract descriptions/powers are excluded
+      expect(deck.items.any((item) => item.toLowerCase().contains('how to')), isFalse);
+      expect(deck.items.any((item) => item.toLowerCase().contains('power of')), isFalse);
+    });
+
+    test('parseAndBuildDeck correctly parses Nepali Politicians entities instead of election summaries', () {
+      final service = GroqDeckService();
+      const rawJson = '''
+[
+  "KP Sharma Oli",
+  "Sher Bahadur Deuba",
+  "Pushpa Kamal Dahal",
+  "Gagan Thapa",
+  "Rabi Lamichhane",
+  "Balen Shah",
+  "Harka Sampang",
+  "Kulman Ghising",
+  "Ram Chandra Poudel",
+  "Bidhya Devi Bhandari",
+  "Bhim Rawal",
+  "Subash Nembang",
+  "Baburam Bhattarai",
+  "Madhav Kumar Nepal",
+  "Sujata Koirala",
+  "history of nepal election system",
+  "election procedure of parliament"
+]
+''';
+      final deck = service.parseAndBuildDeck(
+        rawJson: rawJson,
+        fallbackTopic: 'Nepali Politicians',
+        targetCardCount: 35,
+      );
+
+      expect(deck.name, 'NEPALI POLITICIANS');
+      expect(deck.items, contains('KP Sharma Oli'));
+      expect(deck.items, contains('Sher Bahadur Deuba'));
+      expect(deck.items, contains('Pushpa Kamal Dahal'));
+      expect(deck.items, contains('Balen Shah'));
+      expect(deck.items, contains('Gagan Thapa'));
+      expect(deck.items, contains('Rabi Lamichhane'));
+
+      // Verifies procedural summaries are excluded
+      expect(deck.items.any((item) => item.toLowerCase().contains('history of')), isFalse);
+      expect(deck.items.any((item) => item.toLowerCase().contains('election procedure')), isFalse);
     });
 
     test('Deck canRefresh correctly distinguishes refreshable vs handmade decks', () {

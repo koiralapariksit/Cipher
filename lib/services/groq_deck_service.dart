@@ -385,7 +385,7 @@ class GroqDeckService {
     required String difficulty,
     required String webSearchSnippets,
   }) {
-    return '''You are an expert party game designer for a forehead charades game like 'Heads Up!'. Every card you generate MUST be immediately actable, mimeable, imitatable with sound effects/impressions, or describable with fast verbal clues under a 60-second timer.
+    return '''You are an elite party game director creating cards for 'Heads Up!', a fast-paced forehead charades guessing game. Every single item you generate must be something a player can instantly mime, describe, or name in under 3 seconds.
 
 Target Topic: "$topic"
 Target Count: $cardCount
@@ -394,23 +394,15 @@ Target Difficulty: "$difficulty"
 LIVE WEB / ENCYCLOPEDIC CONTEXT:
 $webSearchSnippets
 
-STRICT CARD RULES:
-1. Length: Strictly 1 to 3 words per card (e.g., 'T-Rex', 'Michael Jackson', 'Slipping on Ice', 'Harry Potter'). Never output long sentences or explanations.
-2. Concrete & Visual Only: Only output recognizable people, characters, animals, objects, foods, iconic titles, or funny physical actions. NEVER output abstract concepts, dates, or obscure trivia.
-3. Party Pacing Mix: 70% universally recognizable crowd-pleasers that everyone in the room knows immediately, and 30% hilarious physical actions or iconic tropes within the topic.
-4. Child-Safe Guardrail: Strictly 100% family-friendly. Zero 18+, pornographic, drug, or harmful content. If user requests adult or violent content, fallback to safe party pop culture, animals, or movies.
-5. Variety: Use high creativity (temperature 0.85) and vary sub-angles so repeated generations for the same topic produce fresh, non-repetitive sets of 35–40 cards.
-6. DECK NAME SUMMARIZATION RULE: If the user inputs a long sentence, query, or detailed description (e.g. "60s-90s pop song mainly mj qeen beatles"), automatically summarize the core theme into a punchy, 1-word or 2-word UPPERCASE deck name (e.g. "LEGENDS" or "POP") for the "name" field. Never use raw long sentences or verbose queries as the deck title.
-7. Output strictly valid JSON with no markdown wrappers.
-
-OUTPUT SCHEMA (RAW JSON OBJECT ONLY):
-{
-  "name": "<PUNCHY 1-WORD OR 2-WORD UPPERCASE TITLE, e.g. 'LEGENDS' or 'POP'>",
-  "emoji": "",
-  "category": "AI Custom",
-  "colorValue": 4280391456,
-  "items": ["Item 1", "Item 2", ...]
-}''';
+STRICT ENTITY-ONLY RULES:
+1. NO DESCRIPTIONS OR POWERS: Never output abstract concepts, emotions, or character powers (e.g., DO NOT output 'hulk rage', 'spidey sense', 'time travel'). Output the actual character name instead (e.g., 'Hulk', 'Spider-Man', 'Doctor Strange').
+2. NO HISTORY OR SUMMARIES: If the user asks for a political topic (e.g., 'Nepali parliament members' or 'Nepali politicians'), output real, well-known names of politicians or political figures (e.g., 'KP Sharma Oli', 'Sher Bahadur Deuba', 'Pushpa Kamal Dahal'), never explanations of elections or parliament procedures.
+3. EXACT FORMATTING: 1 to 3 words maximum per card. Pure nouns, names, titles, movies, or concrete actions.
+4. COUNT & VARIETY: Generate $cardCount unique, highly recognizable items per request. Ensure zero duplicates and high variety.
+5. CHILD-SAFE GUARDRAIL: Strictly 100% family-friendly. Zero 18+, pornographic, drug, or harmful content. If user requests adult or violent content, fallback to safe party pop culture, animals, or movies.
+6. DECK NAME SUMMARIZATION RULE: Automatically summarize the core theme into a punchy, 1-word or 2-word UPPERCASE deck name (e.g. 'LEGENDS' or 'POP').
+7. OUTPUT REQUIREMENT: Return strictly valid JSON array of strings (["Item 1", "Item 2", ...]) with no markdown code block wrappers if possible, or clean JSON text.
+''';
   }
 
   @visibleForTesting
@@ -471,6 +463,31 @@ OUTPUT SCHEMA (RAW JSON OBJECT ONLY):
     return true;
   }
 
+  static bool _isCleanEntityItem(String item) {
+    if (item.length < 2) return false;
+    // Forehead charades cards must be 1-3 words (allow max 4 words for full names)
+    final words = item.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+    if (words.length > 4) return false;
+
+    final lower = item.toLowerCase();
+    const bannedAbstractPhrases = [
+      'history of',
+      'how to',
+      'how elections',
+      'parliament procedure',
+      'election procedure',
+      'voting system',
+      'voting process',
+      'rules of',
+      'explanation of',
+    ];
+    for (final phrase in bannedAbstractPhrases) {
+      if (lower.contains(phrase)) return false;
+    }
+
+    return true;
+  }
+
   /// Parses, sanitizes, and verifies output against schema constraints.
   Deck _parseAndBuildDeck({
     required String rawJson,
@@ -489,20 +506,46 @@ OUTPUT SCHEMA (RAW JSON OBJECT ONLY):
     }
     cleanJson = cleanJson.trim();
 
-    Map<String, dynamic> data = {};
+    dynamic decoded;
     try {
-      data = jsonDecode(cleanJson) as Map<String, dynamic>;
-    } catch (_) {}
+      decoded = jsonDecode(cleanJson);
+    } catch (_) {
+      // Fallback: extract array or object if wrapped in conversational text
+      final arrayMatch = RegExp(r'\[[\s\S]*\]').firstMatch(cleanJson);
+      if (arrayMatch != null) {
+        try {
+          decoded = jsonDecode(arrayMatch.group(0)!);
+        } catch (_) {}
+      }
+      if (decoded == null) {
+        final objectMatch = RegExp(r'\{[\s\S]*\}').firstMatch(cleanJson);
+        if (objectMatch != null) {
+          try {
+            decoded = jsonDecode(objectMatch.group(0)!);
+          } catch (_) {}
+        }
+      }
+    }
 
-    final rawName = data['name']?.toString() ?? '';
+    String rawName = '';
+    String category = 'AI Custom';
+    int colorValue = 4280391456;
+    List<dynamic> rawItems = [];
+
+    if (decoded is List) {
+      rawItems = decoded;
+      rawName = fallbackTopic;
+    } else if (decoded is Map<String, dynamic>) {
+      rawName = decoded['name']?.toString() ?? fallbackTopic;
+      category = decoded['category']?.toString().trim() ?? 'AI Custom';
+      colorValue = decoded['colorValue'] is int
+          ? decoded['colorValue'] as int
+          : 4280391456;
+      rawItems = decoded['items'] as List<dynamic>? ?? [];
+    }
+
     final name = _summarizeDeckTitle(rawName, fallbackTopic);
 
-    final category = data['category']?.toString().trim() ?? 'AI Custom';
-    final colorValue = data['colorValue'] is int
-        ? data['colorValue'] as int
-        : 4280391456;
-
-    final rawItems = data['items'] as List<dynamic>? ?? [];
     final Set<String> seen = {};
     final List<String> sanitizedItems = [];
 
@@ -510,6 +553,7 @@ OUTPUT SCHEMA (RAW JSON OBJECT ONLY):
       final s = item?.toString().trim() ?? '';
       if (s.isEmpty) continue;
       if (!_isSafeItem(s)) continue;
+      if (!_isCleanEntityItem(s)) continue;
       final lower = s.toLowerCase();
       if (!seen.contains(lower)) {
         seen.add(lower);
