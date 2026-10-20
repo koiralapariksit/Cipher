@@ -56,8 +56,12 @@ class _SplashScreenState extends State<SplashScreen>
       }
     });
 
-    // 3. Start arcade progress counter immediately on frame 1 with zero startup stall
-    _progressController.forward(from: 0.0);
+    // 3. Start arcade progress counter immediately on frame 1 via post-frame callback
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _progressController.forward(from: 0.0);
+      }
+    });
     StorageService().init();
   }
 

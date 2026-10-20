@@ -114,17 +114,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           _buildDurationTile(),
                           const Divider(height: 2, thickness: 2, color: kInk),
                           _buildSwitchTile(
-                            title: 'Always Show Action Buttons',
-                            subtitle:
-                                'Show on-screen Pass & Correct buttons alongside tilt controls',
-                            icon: Icons.touch_app_rounded,
-                            iconColor: kLime,
-                            value: _settings.showManualButtons,
-                            onChanged: (val) => _save(
-                                _settings.copyWith(showManualButtons: val)),
-                          ),
-                          const Divider(height: 2, thickness: 2, color: kInk),
-                          _buildSwitchTile(
                             title: 'Invert Tilt Controls',
                             subtitle: _settings.invertTilt
                                 ? 'Active (Default): Tilt UP = Pass, Tilt DOWN = Correct'
@@ -364,44 +353,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildDurationTile() {
     const durations = [30, 60, 90];
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(99),
-              color: kYellow,
-              border: Border.all(color: kInk, width: 2.0),
-            ),
-            child: const Icon(Icons.timer_outlined, color: kInk, size: 22),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Default Duration',
-                  style: GoogleFonts.dmSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: kInk,
-                  ),
-                ),
-                Text(
-                  'Initial timer for round starts',
-                  style: GoogleFonts.dmSans(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: kInkDim,
-                  ),
-                ),
-              ],
-            ),
-          ),
           Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(99),
+                  color: kYellow,
+                  border: Border.all(color: kInk, width: 2.0),
+                ),
+                child: const Icon(Icons.timer_outlined, color: kInk, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Default Duration',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: kInk,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Initial timer for round starts',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: kInkDim,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
             children: durations.map((d) {
               final selected = d == _settings.defaultTimerDuration;
               return GestureDetector(
@@ -409,9 +406,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _save(_settings.copyWith(defaultTimerDuration: d));
                 },
                 child: Container(
-                  margin: const EdgeInsets.only(left: 6),
+                  margin: const EdgeInsets.only(left: 8),
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
                   decoration: BoxDecoration(
                     color: selected ? kYellow : Colors.white,
                     borderRadius: BorderRadius.circular(99),
@@ -421,7 +418,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Text(
                     '${d}s',
                     style: GoogleFonts.bowlbyOne(
-                      fontSize: 12,
+                      fontSize: 13,
                       color: kInk,
                     ),
                   ),

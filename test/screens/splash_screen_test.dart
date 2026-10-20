@@ -28,6 +28,9 @@ void main() {
     expect(find.text('Warming up the party decks...'), findsOneWidget);
     expect(find.text('0%'), findsNWidgets(3));
 
+    // Execute post-frame callback to start progress animation
+    await tester.pump();
+
     // Advance halfway through the 3600ms progress duration (+1800ms = 50%)
     await tester.pump(const Duration(milliseconds: 1800));
     expect(find.text('50%'), findsNWidgets(3));

@@ -1038,16 +1038,17 @@ class _DeckStickerCard extends StatelessWidget {
             children: [
               // Top row: pill count + pin badge + edit + favorite star
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Flexible(
+                  Expanded(
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Flexible(
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 7,
-                              vertical: 3,
+                              horizontal: 5,
+                              vertical: 2.5,
                             ),
                             decoration: BoxDecoration(
                               color: kInk,
@@ -1058,7 +1059,7 @@ class _DeckStickerCard extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.dmSans(
-                                fontSize: 11,
+                                fontSize: 10.5,
                                 fontWeight: FontWeight.w700,
                                 color: kCream,
                               ),
@@ -1066,28 +1067,28 @@ class _DeckStickerCard extends StatelessWidget {
                           ),
                         ),
                         if (isPinned) ...[
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 3),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 5,
-                              vertical: 2,
+                              horizontal: 4,
+                              vertical: 1.5,
                             ),
                             decoration: BoxDecoration(
                               color: kYellow,
                               borderRadius: BorderRadius.circular(99),
-                              border: Border.all(color: kInk, width: 1.5),
+                              border: Border.all(color: kInk, width: 1.2),
                               boxShadow: kSmallShadow,
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 const Icon(Icons.push_pin_rounded,
-                                    size: 10, color: kInk),
-                                const SizedBox(width: 2),
+                                    size: 9, color: kInk),
+                                const SizedBox(width: 1.5),
                                 Text(
                                   'PIN',
                                   style: GoogleFonts.bowlbyOne(
-                                    fontSize: 9,
+                                    fontSize: 8.5,
                                     color: kInk,
                                   ),
                                 ),
@@ -1098,44 +1099,45 @@ class _DeckStickerCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const Spacer(),
-                  if (onEdit != null)
-                    GestureDetector(
-                      onTap: onEdit,
-                      behavior: HitTestBehavior.opaque,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        margin: const EdgeInsets.only(right: 4),
-                        decoration: BoxDecoration(
-                          color: kInk.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          'Edit',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: kInk,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (onEdit != null)
+                        GestureDetector(
+                          onTap: onEdit,
+                          behavior: HitTestBehavior.opaque,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 2,
+                            ),
+                            margin: const EdgeInsets.only(right: 3),
+                            decoration: BoxDecoration(
+                              color: kInk.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              'Edit',
+                              style: GoogleFonts.dmSans(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: kInk,
+                              ),
+                            ),
                           ),
                         ),
+                      GestureDetector(
+                        onTap: onFavoriteToggle,
+                        behavior: HitTestBehavior.opaque,
+                        child: Icon(
+                          isFavorite
+                              ? Icons.star_rounded
+                              : Icons.star_outline_rounded,
+                          size: 19,
+                          color: kInk,
+                        ),
                       ),
-                    ),
-                  GestureDetector(
-                    onTap: onFavoriteToggle,
-                    behavior: HitTestBehavior.opaque,
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 2),
-                      child: Icon(
-                        isFavorite
-                            ? Icons.star_rounded
-                            : Icons.star_outline_rounded,
-                        size: 20,
-                        color: kInk,
-                      ),
-                    ),
+                    ],
                   ),
                 ],
               ),
@@ -1163,16 +1165,7 @@ class _DeckStickerCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                      Text(
-                        deck.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.bowlbyOne(
-                          fontSize: deck.name.length > 18 ? 17 : 21,
-                          color: kInk,
-                          height: 1.05,
-                        ),
-                      ),
+                      _DeckTitleText(title: deck.name),
                     ],
                   ),
                 ),
@@ -1180,6 +1173,57 @@ class _DeckStickerCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Typography Layout for Deck Card Titles (No Mid-Word Splitting) ───────────
+
+class _DeckTitleText extends StatelessWidget {
+  final String title;
+
+  const _DeckTitleText({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    final trimmed = title.trim();
+    final words =
+        trimmed.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+
+    // 1. Single-word titles (e.g. "Celebrities", "Countries", "Animals")
+    if (words.length <= 1) {
+      return FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Text(
+          trimmed,
+          maxLines: 1,
+          style: GoogleFonts.bowlbyOne(
+            fontSize: 22,
+            color: kInk,
+            height: 1.05,
+          ),
+        ),
+      );
+    }
+
+    // 2. Multi-word titles (e.g. "Movies & TV", "Food & Drinks", "Hollywood Movies")
+    final maxWordLength =
+        words.fold<int>(0, (max, w) => w.length > max ? w.length : max);
+    final double computedFontSize = maxWordLength >= 10
+        ? 17.0
+        : (maxWordLength >= 8 ? 19.0 : 22.0);
+
+    return Text(
+      trimmed,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      softWrap: true,
+      style: GoogleFonts.bowlbyOne(
+        fontSize: computedFontSize,
+        color: kInk,
+        height: 1.05,
       ),
     );
   }

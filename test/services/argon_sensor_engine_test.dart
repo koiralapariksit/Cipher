@@ -154,21 +154,24 @@ void main() {
   });
 
   group('AppSettings invertTilt Storage Verification', () {
-    test('Default fallback is invertTilt = true', () {
+    test('Default fallback is invertTilt = true and showManualButtons = false', () {
       const settings = AppSettings();
       expect(settings.invertTilt, isTrue);
+      expect(settings.showManualButtons, isFalse);
     });
 
     test('Serializes and deserializes invertTilt correctly', () {
-      const original = AppSettings(invertTilt: false);
+      const original = AppSettings(invertTilt: false, showManualButtons: true);
       final jsonStr = original.toJson();
       final parsed = AppSettings.fromJson(jsonStr);
 
       expect(parsed.invertTilt, isFalse);
+      expect(parsed.showManualButtons, isTrue);
 
       final mapWithoutField = <String, dynamic>{};
       final fallback = AppSettings.fromMap(mapWithoutField);
       expect(fallback.invertTilt, isTrue);
+      expect(fallback.showManualButtons, isFalse);
     });
   });
 }

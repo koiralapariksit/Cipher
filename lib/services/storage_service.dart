@@ -18,7 +18,7 @@ class AppSettings {
     this.vibrationEnabled = true,
     this.defaultTimerDuration = 60,
     this.tiltSensitivity = 1.0,
-    this.showManualButtons = true,
+    this.showManualButtons = false,
     this.invertTilt = true,
   });
 
@@ -60,7 +60,7 @@ class AppSettings {
       tiltSensitivity:
           (map['tiltSensitivity'] as num?)?.toDouble() ?? 1.0,
       showManualButtons:
-          map['showManualButtons'] as bool? ?? map['forceManualButtons'] as bool? ?? true,
+          map['showManualButtons'] as bool? ?? map['forceManualButtons'] as bool? ?? false,
       invertTilt: map['invertTilt'] as bool? ?? true,
     );
   }

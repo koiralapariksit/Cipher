@@ -198,12 +198,13 @@ void main() {
   });
 
   group('StorageService Invert Tilt Default & Long Title Deck Handling', () {
-    test('fresh StorageService initializes invertTilt to true', () async {
+    test('fresh StorageService initializes invertTilt to true and showManualButtons to false', () async {
       SharedPreferences.setMockInitialValues({});
       final storage = StorageService();
       await storage.init(force: true);
 
       expect(storage.settings.invertTilt, isTrue);
+      expect(storage.settings.showManualButtons, isFalse);
     });
 
     test('custom deck with very long title stores and retrieves properly', () async {

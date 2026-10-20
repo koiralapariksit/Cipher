@@ -49,13 +49,8 @@ class _GameplayScreenState extends State<GameplayScreen>
 
   bool _isNavigatingToResults = false;
 
-  // Real-time sensor debug telemetry notifier
-  final ValueNotifier<({double relPitch, double basePitch, TiltState state})>
-      _sensorDebugNotifier = ValueNotifier((
-    relPitch: 0.0,
-    basePitch: 0.0,
-    state: TiltState.uncalibrated,
-  ));
+
+
 
   @override
   void initState() {
@@ -93,13 +88,6 @@ class _GameplayScreenState extends State<GameplayScreen>
     _engine = ArgonSensorEngine(
       invertZAxis: _storage.settings.invertTilt,
       onActionTriggered: _handleEngineAction,
-      onTelemetryUpdate: (relPitch, basePitch, state) {
-        _sensorDebugNotifier.value = (
-          relPitch: relPitch,
-          basePitch: basePitch,
-          state: state,
-        );
-      },
     );
 
     _engine.start();
@@ -231,7 +219,6 @@ class _GameplayScreenState extends State<GameplayScreen>
     WidgetsBinding.instance.removeObserver(this);
     _flashTimer?.cancel();
     _engine.stop();
-    _sensorDebugNotifier.dispose();
     _controller.dispose();
 
     // Restore Portrait Orientation
@@ -245,34 +232,6 @@ class _GameplayScreenState extends State<GameplayScreen>
     WakelockPlus.disable();
 
     super.dispose();
-  }
-
-  void _handleManualCorrect() {
-    if (_controller.phase == GamePhase.playing) {
-      _engine.reset();
-      final word = _controller.currentWord;
-      final cardIdx = _controller.cardIndex;
-      final sessionId = _controller.roundSessionId;
-      _triggerFeedback(isCorrect: true, word: word);
-      _controller.markCorrect(
-        expectedCardIndex: cardIdx,
-        expectedSessionId: sessionId,
-      );
-    }
-  }
-
-  void _handleManualPass() {
-    if (_controller.phase == GamePhase.playing) {
-      _engine.reset();
-      final word = _controller.currentWord;
-      final cardIdx = _controller.cardIndex;
-      final sessionId = _controller.roundSessionId;
-      _triggerFeedback(isCorrect: false, word: word);
-      _controller.markPass(
-        expectedCardIndex: cardIdx,
-        expectedSessionId: sessionId,
-      );
-    }
   }
 
   @override
@@ -318,64 +277,35 @@ class _GameplayScreenState extends State<GameplayScreen>
               ),
             ),
 
-          // Live Telemetry HUD at bottom (Rel Pitch, Baseline, Engine State)
+          // Subtle tilt hint at bottom
           Positioned(
-            bottom: 6,
+            bottom: 10,
             left: 0,
             right: 0,
-            child: ValueListenableBuilder<
-                ({double relPitch, double basePitch, TiltState state})>(
-              valueListenable: _sensorDebugNotifier,
-              builder: (context, data, _) {
-                final isNeutral = data.state == TiltState.neutralReady;
-                final isHoldingCorrect = data.state == TiltState.holdingCorrect;
-                final isHoldingPass = data.state == TiltState.holdingPass;
-                final isUncalibrated = data.state == TiltState.uncalibrated;
-
-                final Color badgeColor = isHoldingCorrect
-                    ? kLime
-                    : (isHoldingPass
-                        ? kOrange
-                        : (isNeutral
-                            ? kCream
-                            : (isUncalibrated
-                                ? kYellow
-                                : kCream.withValues(alpha: 0.6))));
-
-                final relSign = data.relPitch >= 0 ? '+' : '';
-                final baseSign = data.basePitch >= 0 ? '+' : '';
-                final stateLabel = switch (data.state) {
-                  TiltState.uncalibrated => 'UNCALIBRATED',
-                  TiltState.neutralReady => 'NEUTRAL READY',
-                  TiltState.holdingCorrect => 'HOLDING CORRECT',
-                  TiltState.holdingPass => 'HOLDING PASS',
-                  TiltState.waitForNeutral => 'WAIT FOR NEUTRAL',
-                };
-
-                return Center(
-                  child: IgnorePointer(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: kInk,
-                        borderRadius: BorderRadius.circular(99),
-                        border: Border.all(color: kInk, width: 1.5),
-                        boxShadow: kSmallShadow,
-                      ),
-                      child: Text(
-                        'REL PITCH: $relSign${data.relPitch.toStringAsFixed(1)}°  |  BASELINE: $baseSign${data.basePitch.toStringAsFixed(1)}°  |  STATE: $stateLabel',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 11,
-                          color: badgeColor,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
+            child: Center(
+              child: IgnorePointer(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: kInk,
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(color: kInk, width: 1.5),
+                    boxShadow: kSmallShadow,
+                  ),
+                  child: Text(
+                    _storage.settings.invertTilt
+                        ? 'TILT DOWN = GOT IT!  •  TILT UP = PASS'
+                        : 'TILT DOWN = PASS  •  TILT UP = GOT IT!',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 11,
+                      color: kCream,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.8,
                     ),
                   ),
-                );
-              },
+                ),
+              ),
             ),
           ),
 
@@ -511,8 +441,6 @@ class _GameplayScreenState extends State<GameplayScreen>
 
   // ── Active Gameplay View: Ergonomic Landscape Layout ─────────────────────
   Widget _buildPlaying() {
-    final showButtons = _storage.settings.showManualButtons;
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
       child: Column(
@@ -621,84 +549,56 @@ class _GameplayScreenState extends State<GameplayScreen>
 
           const SizedBox(height: 8),
 
-          // Main Center Area: Left Thumb Button + Word Card + Right Thumb Button
+          // Main Center Area: Huge Centered Word Card taking full stage
           Expanded(
-            child: Row(
-              children: [
-                // Left Thumb PASS Button (non-moving with fixed shadows)
-                if (showButtons)
-                  _ThumbButton(
-                    label: 'PASS',
-                    sublabel: 'Tilt Up ↑',
-                    accentColor: kOrange,
-                    icon: Icons.close_rounded,
-                    onTap: _handleManualPass,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 240),
+              switchInCurve: Curves.easeOutBack,
+              switchOutCurve: Curves.easeIn,
+              transitionBuilder: (child, animation) {
+                final isEven = _controller.cardIndex % 2 == 0;
+                final angle =
+                    (isEven ? 0.035 : -0.035) * (1.0 - animation.value);
+                return ScaleTransition(
+                  scale: animation,
+                  child: Transform.rotate(
+                    angle: angle,
+                    child: child,
                   ),
-
-                // Center Word Display with asymmetric corners, 3px kInk border, Offset(6, 6) shadow
-                // Animated with scale and alternating rotation on every word transition
-                Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 240),
-                    switchInCurve: Curves.easeOutBack,
-                    switchOutCurve: Curves.easeIn,
-                    transitionBuilder: (child, animation) {
-                      final isEven = _controller.cardIndex % 2 == 0;
-                      final angle =
-                          (isEven ? 0.035 : -0.035) * (1.0 - animation.value);
-                      return ScaleTransition(
-                        scale: animation,
-                        child: Transform.rotate(
-                          angle: angle,
-                          child: child,
-                        ),
-                      );
-                    },
-                    child: Container(
-                      key: ValueKey<String>(
-                          '${_controller.cardIndex}_${_controller.currentWord}'),
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: kCream,
-                        borderRadius: kAsymmetricRadius,
-                        border: Border.all(color: kInk, width: 3.0),
-                        boxShadow: kCardShadow,
-                      ),
-                      child: Center(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 820),
-                            child: Text(
-                              _controller.currentWord,
-                              textAlign: TextAlign.center,
-                              maxLines: 2,
-                              style: GoogleFonts.bowlbyOne(
-                                fontSize: 54,
-                                color: kInk,
-                                height: 1.05,
-                              ),
-                            ),
-                          ),
+                );
+              },
+              child: Container(
+                key: ValueKey<String>(
+                    '${_controller.cardIndex}_${_controller.currentWord}'),
+                margin: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 32, vertical: 16),
+                decoration: BoxDecoration(
+                  color: kCream,
+                  borderRadius: kAsymmetricRadius,
+                  border: Border.all(color: kInk, width: 3.5),
+                  boxShadow: kCardShadow,
+                ),
+                child: Center(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 820),
+                      child: Text(
+                        _controller.currentWord,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        style: GoogleFonts.bowlbyOne(
+                          fontSize: 56,
+                          color: kInk,
+                          height: 1.05,
                         ),
                       ),
                     ),
                   ),
                 ),
-
-                // Right Thumb GOT IT Button (non-moving with fixed shadows)
-                if (showButtons)
-                  _ThumbButton(
-                    label: 'GOT IT!',
-                    sublabel: 'Tilt Down ↓',
-                    accentColor: kLime,
-                    icon: Icons.check_rounded,
-                    onTap: _handleManualCorrect,
-                  ),
-              ],
+              ),
             ),
           ),
         ],
@@ -879,74 +779,4 @@ class _GameplayScreenState extends State<GameplayScreen>
   }
 }
 
-// ── Left/Right Thumb Buttons ────────────────────────────────────────────────
 
-class _ThumbButton extends StatelessWidget {
-  final String label;
-  final String sublabel;
-  final Color accentColor;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _ThumbButton({
-    required this.label,
-    required this.sublabel,
-    required this.accentColor,
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 100,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-          decoration: BoxDecoration(
-            color: accentColor,
-            borderRadius: kAsymmetricRadius,
-            border: Border.all(color: kInk, width: 3.0),
-            boxShadow: const [
-              BoxShadow(color: kInk, offset: Offset(4, 4), blurRadius: 0),
-            ],
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(99),
-                  color: kInk,
-                ),
-                child: Icon(icon, size: 22, color: accentColor),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.bowlbyOne(
-                  fontSize: 16,
-                  color: kInk,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                sublabel,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.dmSans(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: kInk,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}

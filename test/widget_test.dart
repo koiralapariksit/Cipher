@@ -14,6 +14,9 @@ void main() {
     await tester.pumpWidget(const CipherApp());
     expect(find.textContaining('Cipher'), findsWidgets);
 
+    // Execute post-frame callback to begin progress
+    await tester.pump();
+
     // Pump through the 3600ms arcade progress, hold delay, and fade transition
     await tester.pump(const Duration(milliseconds: 3600));
     await tester.pump(const Duration(milliseconds: 500));
