@@ -14,12 +14,8 @@ class GroqDeckService {
   factory GroqDeckService() => _instance;
   GroqDeckService._internal();
 
-  static const String _defaultModel = 'openai/gpt-oss-120b';
-  static const List<String> _fallbackModels = [
-    'llama-3.3-70b-versatile',
-    'qwen/qwen3.8-27b',
-    'openai/gpt-oss-20b',
-  ];
+  static const String _defaultModel = 'llama-3.3-70b-versatile';
+  static const String _fallbackModel429 = 'llama-3.1-8b-instant';
 
   /// Maps player counts (2 to 6) to recommended target card quantities:
   /// 2 Players -> 40 cards
@@ -341,26 +337,32 @@ class GroqDeckService {
     }
   }
 
-  /// Executes chat completion with Groq, falling back gracefully if the
-  /// target model was decommissioned or not accessible.
+  /// Executes chat completion with Groq using llama-3.3-70b-versatile,
+  /// with 1 automatic retry / fallback to llama-3.1-8b-instant on 429 rate limit,
+  /// structured JSON output, and 12-second timeout.
   Future<String> _executeGroqCompletion({
     required String apiKey,
     required String prompt,
     double temperature = 0.85,
-    Duration timeout = const Duration(seconds: 25),
+    Duration timeout = const Duration(seconds: 12),
     void Function(String step)? onProgress,
   }) async {
-    final candidateModels = [_defaultModel, ..._fallbackModels];
+    final candidateModels = [_defaultModel, _fallbackModel429];
 
     String? lastError;
-    for (final model in candidateModels) {
+    for (int attempt = 0; attempt < candidateModels.length; attempt++) {
+      final model = candidateModels[attempt];
       try {
+        if (attempt > 0) {
+          onProgress?.call('Optimizing connection with high-speed Groq AI...');
+        }
         final payload = {
           'model': model,
           'messages': [
             {'role': 'user', 'content': prompt},
           ],
           'temperature': temperature,
+          'response_format': {'type': 'json_object'},
         };
 
         final response = await http
@@ -386,16 +388,13 @@ class GroqDeckService {
           }
         }
 
-        // If 404/400 model not available or decommissioned, try next candidate
-        if (response.statusCode == 404 ||
+        // On 429 rate limit or 404/400 model issue, try fallback instant model
+        if (response.statusCode == 429 ||
+            response.statusCode == 404 ||
             response.statusCode == 400 ||
             response.statusCode == 422) {
-          final errorBody = response.body;
-          if (errorBody.contains('model') ||
-              errorBody.contains('decommissioned')) {
-            lastError = 'Model $model unavailable on Groq: $errorBody';
-            continue;
-          }
+          lastError = 'Rate limited or model busy (${response.statusCode})';
+          continue;
         }
 
         if (response.statusCode == 401) {
@@ -403,24 +402,20 @@ class GroqDeckService {
               'AI deck generator is currently offline. Please try again later.');
         }
 
-        if (response.statusCode == 429) {
-          throw Exception(
-              'AI generator is busy. Please wait a few seconds and retry.');
-        }
-
         lastError = 'Service error (${response.statusCode})';
       } catch (e) {
-        if (e is Exception &&
-            (e.toString().contains('offline') ||
-                e.toString().contains('busy'))) {
+        if (e is Exception && e.toString().contains('offline')) {
           rethrow;
         }
         lastError = e.toString();
       }
     }
 
-    throw Exception(lastError ??
-        'AI deck generator is currently offline. Please try again later.');
+    throw Exception(
+      lastError?.contains('offline') == true
+          ? 'AI deck generator is currently offline. Please try again later.'
+          : 'AI Generation failed — check connection & try again',
+    );
   }
 
   /// Builds the prompt according to the strict commercial Forehead Charades ("Heads Up!") specification.
@@ -443,6 +438,12 @@ Target Difficulty: "$difficulty"
 LIVE WEB / ENCYCLOPEDIC CONTEXT:
 $webSearchSnippets
 
+STRICT A–Z BAN ON USER PROMPT TEXT:
+Never repeat or include the words from the user's input topic "$topic" in the generated card names. For example, if the user asks for 'UCL winning football club', DO NOT output 'Real Madrid Football Club' or 'UCL Champion'. Output standalone proper names only: 'Real Madrid', 'AC Milan', 'Bayern Munich', 'Liverpool'. If the user asks for 'MCU Avengers', DO NOT output 'MCU Thor' or 'Avengers Assemble'. Output 'Thor', 'Iron Man', 'Thanos'. Each card must be entirely unique and diverse.
+
+STRICT CATEGORY PURITY:
+Every single card must belong strictly to the requested category or domain. Zero generic filler, zero abstract meta terms, zero descriptive sentences.
+
 STRICT ENTITY-ONLY RULES:
 1. NO DESCRIPTIONS OR POWERS: Never output abstract concepts, emotions, or character powers (e.g., DO NOT output 'hulk rage', 'spidey sense', 'time travel'). Output the actual character name instead (e.g., 'Hulk', 'Spider-Man', 'Doctor Strange').
 2. NO HISTORY OR SUMMARIES: If the user asks for a political topic (e.g., 'Nepali parliament members' or 'Nepali politicians'), output real, well-known names of politicians or political figures (e.g., 'KP Sharma Oli', 'Sher Bahadur Deuba', 'Pushpa Kamal Dahal'), never explanations of elections or parliament procedures.
@@ -450,8 +451,13 @@ STRICT ENTITY-ONLY RULES:
 4. COUNT & ANTI-REPETITION: Generate strictly $cardCount unique, highly recognizable items per request. Ensure zero duplicates, distinct sub-themes, and high variety.
 5. CHILD-SAFE GUARDRAIL: Strictly 100% family-friendly. Zero 18+, pornographic, drug, or harmful content. If user requests adult or violent content, fallback to safe party pop culture, animals, or movies.
 6. DECK NAME SUMMARIZATION RULE: Automatically summarize the core theme into a punchy, 1-word or 2-word UPPERCASE deck name (e.g. 'LEGENDS' or 'POP').
-7. OUTPUT REQUIREMENT: Return strictly valid JSON array of strings (["Item 1", "Item 2", ...]) with no markdown code block wrappers if possible, or clean JSON text.
-8. CRITICAL ANTI-TEMPLATE RULE: Never use the user's input topic as a mandatory prefix or suffix for every card. If the user asks for 'MCU Avengers', do NOT output 'Watching mcu avengers' or 'Classic mcu avengers'. Output distinct, independent entity names, characters, items, or titles (e.g., 'Iron Man', 'Thor', 'Thanos', 'Shield', 'Mjolnir', 'Black Widow'). Each card must be entirely unique and diverse.
+7. CRITICAL ANTI-TEMPLATE RULE: Never use the user's input topic as a mandatory prefix or suffix for every card. If the user asks for 'MCU Avengers', do NOT output 'Watching mcu avengers' or 'Classic mcu avengers'. Output distinct, independent entity names, characters, items, or titles (e.g., 'Iron Man', 'Thor', 'Thanos', 'Shield', 'Mjolnir', 'Black Widow'). Each card must be entirely unique and diverse.
+8. OUTPUT REQUIREMENT: Return strictly a valid JSON object matching this schema:
+{
+  "name": "SHORT UPPERCASE DECK NAME",
+  "category": "Category",
+  "items": ["Card 1", "Card 2", ...]
+}
 ''';
   }
 
@@ -502,6 +508,123 @@ STRICT ENTITY-ONLY RULES:
     return candidate.toUpperCase();
   }
 
+  static const Set<String> _stopWords = {
+    'a', 'an', 'the', 'of', 'in', 'on', 'for', 'with', 'and', 'or', 'to',
+    'is', 'at', 'by', 'from', 'about', 'into', 'through', 'during',
+    'before', 'after', 'above', 'below', 'between', 'out', 'up', 'down',
+  };
+
+  /// Sanitizes raw generated cards by applying:
+  /// 1. Strict A-Z prompt word rejection (ban on cards containing full topic phrase or 2+ significant words)
+  /// 2. Banned acronyms extracted from uppercase prompt tokens (e.g., UCL, MCU)
+  /// 3. Length checks (1 to 3 words, max 4 words for full personal names)
+  /// 4. Abstract meta-phrases and descriptions removal
+  /// 5. Child-safe family-friendly guardrail
+  /// 6. Strict deduplication and trimming
+  static List<String> sanitizeAndFilterCards(
+    List<dynamic> rawItems,
+    String topic,
+  ) {
+    final cleanTopic = topic.trim();
+    final lowerTopic = cleanTopic.toLowerCase();
+
+    // Extract acronyms from topic (all-uppercase alphanumeric tokens of length >= 2)
+    final topicTokens = cleanTopic.split(RegExp(r'\s+'));
+    final Set<String> acronyms = {};
+    for (final token in topicTokens) {
+      final alphaOnly = token.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+      if (alphaOnly.length >= 2 &&
+          alphaOnly == alphaOnly.toUpperCase() &&
+          !RegExp(r'^\d+$').hasMatch(alphaOnly)) {
+        acronyms.add(alphaOnly.toLowerCase());
+      }
+    }
+
+    // Extract significant words from topic (length >= 4, not stop words, letters/digits only)
+    final Set<String> significantTopicWords = {};
+    for (final token in topicTokens) {
+      final cleanWord = token.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+      if (cleanWord.length >= 4 && !_stopWords.contains(cleanWord)) {
+        significantTopicWords.add(cleanWord);
+      }
+    }
+
+    final Set<String> seen = {};
+    final List<String> result = [];
+
+    for (final item in rawItems) {
+      final rawStr = item?.toString().trim() ?? '';
+      if (rawStr.isEmpty) continue;
+
+      // Basic cleanup (remove numbering like "1. ", leading quotes, etc.)
+      var cleanStr = rawStr.replaceAll(RegExp(r'^\d+[\.\)]\s*'), '').trim();
+      cleanStr = cleanStr.replaceAll(RegExp(r'''^["']+|["']+$'''), '').trim();
+      if (cleanStr.length < 2) continue;
+
+      // Family-safe check
+      if (!_isSafeItem(cleanStr)) continue;
+
+      // Clean entity check (no abstract meta phrases, max 4 words)
+      if (!_isCleanEntityItem(cleanStr, topic: cleanTopic)) continue;
+
+      final lowerCard = cleanStr.toLowerCase();
+
+      // Rule A: If card is identical to topic, drop it
+      if (lowerCard == lowerTopic) continue;
+
+      // Rule B: If the entire normalized topic phrase (if length >= 4) is contained in the card, drop it
+      if (lowerTopic.length >= 4 && lowerCard.contains(lowerTopic)) {
+        continue;
+      }
+
+      // Rule C: If the card contains any standalone prompt acronym (e.g. UCL, MCU, NBA), drop it
+      bool hasAcronym = false;
+      for (final acr in acronyms) {
+        final pattern = RegExp(r'\b' + RegExp.escape(acr) + r'\b');
+        if (pattern.hasMatch(lowerCard)) {
+          hasAcronym = true;
+          break;
+        }
+      }
+      if (hasAcronym) continue;
+
+      // Rule D: If card contains 2 or more significant words from the user's prompt (length >= 4), drop it
+      int significantMatches = 0;
+      for (final word in significantTopicWords) {
+        final pattern = RegExp(r'\b' + RegExp.escape(word) + r'\b');
+        if (pattern.hasMatch(lowerCard)) {
+          significantMatches++;
+        }
+      }
+      if (significantMatches >= 2) {
+        continue;
+      }
+
+      // Rule E: If topic is short (1 or 2 significant words) and card contains the main topic word combined with meta words (e.g. "Avengers Assemble")
+      if (significantTopicWords.length <= 2) {
+        bool matchesShortTopicMeta = false;
+        for (final word in significantTopicWords) {
+          final pattern = RegExp(r'\b' + RegExp.escape(word) + r'\b');
+          if (pattern.hasMatch(lowerCard)) {
+            if (lowerCard != word) {
+              matchesShortTopicMeta = true;
+              break;
+            }
+          }
+        }
+        if (matchesShortTopicMeta) continue;
+      }
+
+      // Deduplicate
+      if (!seen.contains(lowerCard)) {
+        seen.add(lowerCard);
+        result.add(cleanStr);
+      }
+    }
+
+    return result;
+  }
+
   static bool _isSafeItem(String item) {
     const prohibitedSubstrings = [
       'porn', 'xxx', 'sex', 'nude', 'naked', 'erotic', 'cocaine', 'heroin',
@@ -542,7 +665,7 @@ STRICT ENTITY-ONLY RULES:
       final t = topic.trim().toLowerCase();
       if (t.length >= 3 && lower != t) {
         final lazyPrefixes = ['watching ', 'classic ', 'acting out ', 'drawing ', 'singing about ', 'extreme ', 'ultimate ', 'retro ', 'super '];
-        final lazySuffixes = [' fan', ' expert', ' party', ' mania', ' challenge', ' secrets', ' night', ' legend', ' mystery'];
+        final lazySuffixes = [' fan', ' expert', ' party', ' mania', ' challenge', ' secrets', ' night', ' legend', ' mystery', ' hero', ' show'];
         for (final p in lazyPrefixes) {
           if (lower.startsWith(p) && lower.contains(t)) return false;
         }
@@ -577,18 +700,18 @@ STRICT ENTITY-ONLY RULES:
     try {
       decoded = jsonDecode(cleanJson);
     } catch (_) {
-      // Fallback: extract array or object if wrapped in conversational text
-      final arrayMatch = RegExp(r'\[[\s\S]*\]').firstMatch(cleanJson);
-      if (arrayMatch != null) {
+      // Fallback: extract object or array if wrapped in conversational text
+      final objectMatch = RegExp(r'\{[\s\S]*\}').firstMatch(cleanJson);
+      if (objectMatch != null) {
         try {
-          decoded = jsonDecode(arrayMatch.group(0)!);
+          decoded = jsonDecode(objectMatch.group(0)!);
         } catch (_) {}
       }
       if (decoded == null) {
-        final objectMatch = RegExp(r'\{[\s\S]*\}').firstMatch(cleanJson);
-        if (objectMatch != null) {
+        final arrayMatch = RegExp(r'\[[\s\S]*\]').firstMatch(cleanJson);
+        if (arrayMatch != null) {
           try {
-            decoded = jsonDecode(objectMatch.group(0)!);
+            decoded = jsonDecode(arrayMatch.group(0)!);
           } catch (_) {}
         }
       }
@@ -599,72 +722,26 @@ STRICT ENTITY-ONLY RULES:
     int colorValue = 4280391456;
     List<dynamic> rawItems = [];
 
-    if (decoded is List) {
-      rawItems = decoded;
-      rawName = fallbackTopic;
-    } else if (decoded is Map<String, dynamic>) {
+    if (decoded is Map<String, dynamic>) {
       rawName = decoded['name']?.toString() ?? fallbackTopic;
       category = decoded['category']?.toString().trim() ?? 'AI Custom';
       colorValue = decoded['colorValue'] is int
           ? decoded['colorValue'] as int
           : 4280391456;
       rawItems = decoded['items'] as List<dynamic>? ?? [];
+    } else if (decoded is List) {
+      rawItems = decoded;
+      rawName = fallbackTopic;
     }
 
     final name = _summarizeDeckTitle(rawName, fallbackTopic);
 
-    final Set<String> seen = {};
-    final List<String> sanitizedItems = [];
+    // Apply strict sanitization, deduplication, and A-Z prompt word filtering
+    final sanitizedItems = sanitizeAndFilterCards(rawItems, fallbackTopic);
 
-    for (final item in rawItems) {
-      final s = item?.toString().trim() ?? '';
-      if (s.isEmpty) continue;
-      if (!_isSafeItem(s)) continue;
-      if (!_isCleanEntityItem(s, topic: fallbackTopic)) continue;
-      final lower = s.toLowerCase();
-      if (!seen.contains(lower)) {
-        seen.add(lower);
-        sanitizedItems.add(s);
-      }
-    }
-
-    // Creative auto-padding if fewer than 15 items returned so gameplay is never blocked
-    if (sanitizedItems.length < 15) {
-      final List<String> fallbackPatterns = [
-        '$fallbackTopic Hero',
-        '$fallbackTopic Villain',
-        '$fallbackTopic Sidekick',
-        '$fallbackTopic Origin',
-        '$fallbackTopic Artifact',
-        '$fallbackTopic Weapon',
-        '$fallbackTopic Costume',
-        '$fallbackTopic Vehicle',
-        '$fallbackTopic Mission',
-        '$fallbackTopic Battle',
-        '$fallbackTopic HQ',
-        '$fallbackTopic Team',
-        '$fallbackTopic Rival',
-        '$fallbackTopic Disguise',
-        '$fallbackTopic Power',
-        '$fallbackTopic Symbol',
-        '$fallbackTopic Prop',
-        '$fallbackTopic Catchphrase',
-        '$fallbackTopic Episode',
-        '$fallbackTopic Finale',
-        '$fallbackTopic Climax',
-        '$fallbackTopic Sequel',
-        '$fallbackTopic Cameo',
-        '$fallbackTopic Poster',
-        '$fallbackTopic Theme',
-      ];
-      for (final phrase in fallbackPatterns) {
-        final lower = phrase.toLowerCase();
-        if (!seen.contains(lower)) {
-          seen.add(lower);
-          sanitizedItems.add(phrase);
-        }
-        if (sanitizedItems.length >= 25) break;
-      }
+    // If fewer than 10 valid items returned, fail cleanly without generating fake templates
+    if (sanitizedItems.length < 10) {
+      throw Exception('AI Generation failed — check connection & try again');
     }
 
     // Shuffle cards so every game starts with a random word sequence

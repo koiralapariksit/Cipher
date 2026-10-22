@@ -31,7 +31,7 @@ void main() {
       expect(initialCount, isNonNegative);
     });
 
-    test('parseAndBuildDeck auto-pads short responses without throwing error', () {
+    test('parseAndBuildDeck throws clean exception when insufficient items returned, never using fake template fallbacks', () {
       final service = GroqDeckService();
       const rawJson = '''
 {
@@ -40,17 +40,18 @@ void main() {
   "items": ["Yttrium Barium", "Meissner Effect", "Zero Resistance"]
 }
 ''';
-      final deck = service.parseAndBuildDeck(
-        rawJson: rawJson,
-        fallbackTopic: 'Superconductors',
-        targetCardCount: 25,
+      expect(
+        () => service.parseAndBuildDeck(
+          rawJson: rawJson,
+          fallbackTopic: 'Superconductors',
+          targetCardCount: 25,
+        ),
+        throwsA(
+          predicate((e) =>
+              e.toString().contains('AI Generation failed — check connection & try again') &&
+              !e.toString().contains('Superconductors Hero')),
+        ),
       );
-
-      expect(deck.name, 'SUPERCONDUCTORS');
-      expect(deck.emoji, '');
-      expect(deck.items.length, greaterThanOrEqualTo(25));
-      expect(deck.items, contains('Meissner Effect'));
-      expect(deck.items, contains('Superconductors Hero'));
     });
 
     test('Missing API Key throws friendly offline error without mentioning .env or Groq', () async {
@@ -79,7 +80,10 @@ void main() {
 {
   "name": "60s-90s pop song mainly mj qeen beatles",
   "category": "Music",
-  "items": ["Billie Jean", "Bohemian Rhapsody", "Hey Jude", "Thriller", "Yesterday"]
+  "items": [
+    "Billie Jean", "Bohemian Rhapsody", "Hey Jude", "Thriller", "Yesterday",
+    "Beat It", "Radio Ga Ga", "Help", "Smooth Criminal", "Under Pressure"
+  ]
 }
 ''';
       final deck = service.parseAndBuildDeck(
@@ -100,7 +104,11 @@ void main() {
 {
   "name": "Party",
   "category": "Entertainment",
-  "items": ["Dance Battle", "bad xxx content", "Charades", "explicit porn stuff", "Karaoke"]
+  "items": [
+    "Dance Battle", "bad xxx content", "Charades", "explicit porn stuff", "Karaoke",
+    "Limbo", "Musical Chairs", "Trivia", "Pictionary", "Board Games", "Twister",
+    "Balloon Pop", "Sack Race", "Pinata"
+  ]
 }
 ''';
       final deck = service.parseAndBuildDeck(
@@ -112,6 +120,7 @@ void main() {
       expect(deck.items, contains('Dance Battle'));
       expect(deck.items, contains('Charades'));
       expect(deck.items, contains('Karaoke'));
+      expect(deck.items, contains('Balloon Pop'));
       expect(deck.items.any((item) => item.contains('xxx') || item.contains('porn')), isFalse);
     });
 
@@ -127,6 +136,17 @@ void main() {
       // System Role
       expect(prompt, contains("You are an elite party game director creating cards for 'Heads Up!'"));
       expect(prompt, contains('fast-paced forehead charades guessing game'));
+
+      // Strict A-Z ban on prompt text
+      expect(prompt, contains('STRICT A–Z BAN ON USER PROMPT TEXT'));
+      expect(prompt, contains("Never repeat or include the words from the user's input topic"));
+      expect(prompt, contains('UCL winning football club'));
+      expect(prompt, contains('Real Madrid Football Club'));
+      expect(prompt, contains('UCL Champion'));
+
+      // Strict category purity
+      expect(prompt, contains('STRICT CATEGORY PURITY'));
+      expect(prompt, contains('Zero generic filler, zero abstract meta terms, zero descriptive sentences'));
 
       // Rule 1: No descriptions or powers, actual character names
       expect(prompt, contains('NO DESCRIPTIONS OR POWERS'));
@@ -150,12 +170,49 @@ void main() {
       // Rule 5: Child-Safe guardrail
       expect(prompt, contains('CHILD-SAFE GUARDRAIL: Strictly 100% family-friendly'));
 
-      // Rule 7: JSON array of strings
-      expect(prompt, contains('OUTPUT REQUIREMENT: Return strictly valid JSON array of strings'));
-
-      // Rule 8: Anti-template rule
+      // Rule 7: Anti-template rule
       expect(prompt, contains('CRITICAL ANTI-TEMPLATE RULE'));
       expect(prompt, contains("Never use the user's input topic as a mandatory prefix or suffix"));
+
+      // Rule 8: JSON object schema
+      expect(prompt, contains('OUTPUT REQUIREMENT: Return strictly a valid JSON object matching this schema:'));
+    });
+
+    test('sanitizeAndFilterCards enforces strict A-Z prompt word rejection for UCL clubs', () {
+      final rawItems = [
+        'Real Madrid Football Club',
+        'UCL Champion',
+        'Real Madrid',
+        'AC Milan',
+        'Bayern Munich',
+        'Liverpool',
+        'Football Club Barcelona',
+        'Winning Club UCL',
+        'Borussia Dortmund',
+        'Juventus',
+        'Inter Milan',
+        'Chelsea',
+      ];
+
+      final filtered = GroqDeckService.sanitizeAndFilterCards(
+        rawItems,
+        'UCL winning football club',
+      );
+
+      // Rejects cards with prompt acronym UCL or 2+ significant words (winning, football, club)
+      expect(filtered, contains('Real Madrid'));
+      expect(filtered, contains('AC Milan'));
+      expect(filtered, contains('Bayern Munich'));
+      expect(filtered, contains('Liverpool'));
+      expect(filtered, contains('Borussia Dortmund'));
+      expect(filtered, contains('Juventus'));
+      expect(filtered, contains('Inter Milan'));
+      expect(filtered, contains('Chelsea'));
+
+      expect(filtered, isNot(contains('Real Madrid Football Club')));
+      expect(filtered, isNot(contains('UCL Champion')));
+      expect(filtered, isNot(contains('Football Club Barcelona')));
+      expect(filtered, isNot(contains('Winning Club UCL')));
     });
 
     test('parseAndBuildDeck rejects lazy templated prefixes and suffixes for MCU Avengers', () {

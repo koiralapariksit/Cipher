@@ -165,7 +165,7 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
       } else if (e.toString().contains('busy')) {
         errorMessage = 'AI generator is busy. Please try again in a moment.';
       } else {
-        errorMessage = 'Failed to generate deck. Please try again.';
+        errorMessage = 'AI Generation failed — check connection & try again';
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
