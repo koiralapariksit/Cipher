@@ -3,7 +3,8 @@
 # ⚡ CIPHER! (v1.0)
 ### The Fast-Paced, Neo-Brutalist Party Charades Engine Powered by AIVCO AI
 
-[![Download APK](https://img.shields.io/badge/📲_Download_APK-Cipher--v1.0.apk-BAFF29?style=for-the-badge&labelColor=000000)](releases/Cipher-v1.0.apk)
+[![INSTALL NOW](https://img.shields.io/badge/🚀_INSTALL_NOW-Cipher--v1.0.apk-BAFF29?style=for-the-badge&labelColor=000000)](releases/Cipher-v1.0.apk?raw=true)
+[![Download APK](https://img.shields.io/badge/📲_Download_APK-Cipher--v1.0.apk-BAFF29?style=for-the-badge&labelColor=000000)](releases/Cipher-v1.0.apk?raw=true)
 [![Latest Release](https://img.shields.io/badge/GitHub_Release-v1.0-FFD700?style=for-the-badge&logo=github&logoColor=black)](../../releases/latest)
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
 [![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://android.com)
@@ -13,7 +14,7 @@
   Never run out of cards again—synthesize encrypted, zero-spoiler custom decks on <i>any</i> topic in seconds with <b>AIVCO AI</b>.
 </p>
 
-### 📥 [Click Here to Download `Cipher-v1.0.apk` Directly](releases/Cipher-v1.0.apk)
+### 📥 [**🚀 CLICK HERE TO INSTALL NOW (`Cipher-v1.0.apk`)**](releases/Cipher-v1.0.apk?raw=true)
 *(Or grab it from the [GitHub Releases](../../releases) page!)*
 
 </div>
@@ -30,7 +31,7 @@ Instead of locking players behind static wordlists, **Cipher!** integrates the *
 
 ## 📦 Quick Install (Android)
 
-1. Download **[`Cipher-v1.0.apk`](releases/Cipher-v1.0.apk)** directly onto your Android phone.
+1. Download **[`Cipher-v1.0.apk`](releases/Cipher-v1.0.apk?raw=true)** directly onto your Android phone.
 2. Open the downloaded file (allow *"Install from Unknown Sources"* if prompted by Android).
 3. Launch **Cipher!**, pick a deck or generate one with **AIVCO AI**, and start playing!
 
