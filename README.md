@@ -1,17 +1,185 @@
-# heads_guess
+<div align="center">
 
-A new Flutter project.
+# ⚡ CIPHER!
+### The Fast-Paced, Neo-Brutalist Party Charades Engine Powered by AIVCO AI
 
-## Getting Started
+[![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
+[![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?style=for-the-badge&logo=dart&logoColor=white)](https://dart.dev)
+[![AIVCO AI](https://img.shields.io/badge/AI_Engine-AIVCO_AI-BAFF29?style=for-the-badge&labelColor=000000)](https://github.com/parikshit-koirala)
+[![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://android.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-FFD700?style=for-the-badge)](LICENSE)
 
-This project is a starting point for a Flutter application.
+<p align="center">
+  <b>Hold the phone to your forehead. Tilt down when you get it right. Tilt up to pass.</b><br/>
+  Never run out of cards again—synthesize encrypted, zero-spoiler custom decks on <i>any</i> topic in seconds with <b>AIVCO AI</b>.
+</p>
 
-A few resources to get you started if this is your first Flutter project:
+[📲 **Download Latest APK**](../../releases) · [🐛 **Report a Bug**](../../issues) · [✨ **Request a Feature**](../../issues)
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+</div>
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+---
+
+## 🎯 Overview
+
+**Cipher!** reimagines classic forehead charades with an uncompromising **Neo-Brutalist arcade UI**, responsive physical motion controls, and real-time generative AI. 
+
+Most party games lock players behind paywalled expansion packs or repetitive, static wordlists. **Cipher!** integrates the **AIVCO AI Engine** to turn any prompt—from *"90s Rock Bands"* and *"Premier League Clubs"* to *"Nepali Pop Culture"* or *"Sci-Fi Movies"*—into a balanced, spoiler-encrypted party deck tailored to your exact group size and difficulty vibe.
+
+---
+
+## ✨ Key Features
+
+* 🧠 **AIVCO AI Deck Synthesis:** Generate custom decks on any conceivable topic in under 3 seconds. Built with strict entity-only guardrails to ensure every card is a pure, actable noun, person, or title—zero filler or repetitive suffixes.
+* 🛡️ **Zero-Spoiler Encryption Guarantee:** AI-generated decks are obfuscated and saved directly into your local library. The player holding the phone during generation never sees the wordlist beforehand. Editing a locked deck requires clearing an explicit Spoiler Guard prompt.
+* 📳 **60fps Accelerometer & Gyro Controls:** Hold the phone in landscape against your forehead.
+  * **Tilt Down ($\downarrow$):** Mark card as **CORRECT** (triggers haptic feedback + audio chime).
+  * **Tilt Up ($\uparrow$):** **PASS / SKIP** tough cards immediately.
+* 👥 **Dynamic Player Scaling (2P – 6P):** Automatically scales deck density and card generation targets (`~40` to `~120+` cards) based on your active party size (`2P`, `3P`, `4P`, `5P`, `6P`) so no card repeats mid-session.
+* 🎚️ **3 Distinct Vibe & Difficulty Modes:**
+  * 🌱 **Casual:** Popular, everyday, and universally relatable hits.
+  * 🎉 **Party:** Fast-paced crowd-pleasers built for high-energy rooms.
+  * 🔥 **Hardcore:** Deep-cut trivia and niche entities for true superfans.
+* 🛠️ **Custom Deck Studio:** Build, edit, add, or prune cards manually with bulk comma-separated pasting and instant local persistence.
+* 🎨 **High-Contrast Neo-Brutalist Design:** Tactile offset hard shadows, thick ink borders, electric cobalt & acid-lime palettes, and punchy typography readable from across a crowded room.
+
+---
+
+## 📸 Screenshots
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center"><b>Home & Deck Library</b></td>
+      <td align="center"><b>AIVCO AI Generator</b></td>
+      <td align="center"><b>Deck Studio & Spoiler Lock</b></td>
+      <td align="center"><b>Forehead Gameplay</b></td>
+    </tr>
+    <tr>
+      <td><img src="assets/screenshots/home.jpg" width="200" alt="Home Screen"/></td>
+      <td><img src="assets/screenshots/ai_generator.jpg" width="200" alt="AI Generator"/></td>
+      <td><img src="assets/screenshots/edit_deck.jpg" width="200" alt="Edit Deck"/></td>
+      <td><img src="assets/screenshots/gameplay.jpg" width="200" alt="Gameplay"/></td>
+    </tr>
+  </table>
+  <p><i>(Tip: Drop your app screenshots into <code>assets/screenshots/</code> to populate this gallery!)</i></p>
+</div>
+
+---
+
+## 🏗️ Architecture & Tech Stack
+
+| Layer | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Framework** | Flutter (Dart 3) | Cross-platform UI & high-frame-rate animations |
+| **AI Synthesis** | AIVCO AI Engine (LLaMA 3.3 70B) | Structured JSON entity extraction & custom deck generation |
+| **Motion Sensors** | `sensors_plus` | Real-time accelerometer & gyroscope tilt detection |
+| **Local Storage** | `shared_preferences` + Cipher Encoding | Persistent custom decks & Zero-Spoiler payload obfuscation |
+| **Networking** | `http` | Low-latency REST calls with strict JSON schema validation |
+
+### Project Structure
+
+```text
+lib/
+├── main.dart                      # App entry point, theme & orientation locks
+├── models/
+│   └── deck_model.dart            # Deck & card serialization + encryption flags
+├── services/
+│   ├── groq_deck_service.dart     # AIVCO AI synthesis, JSON parsing & sanitization
+│   └── storage_service.dart       # Local persistence & zero-spoiler cipher logic
+├── screens/
+│   ├── home_screen.dart           # Main arcade hub & category browser
+│   ├── ai_deck_generator_screen.dart # Parameterized AIVCO AI prompt studio
+│   ├── edit_deck_screen.dart      # Spoiler-guarded card manager
+│   ├── gameplay_screen.dart       # Landscape sensor-driven charades loop
+│   └── results_screen.dart        # Post-round scoreboard & card breakdown
+└── widgets/                       # Neo-brutalist buttons, chips & hard-shadow cards
+```
+
+---
+
+## 🚀 Getting Started
+
+### 1. Prerequisites
+* **Flutter SDK:** `>=3.3.0`
+* **Android Studio / ADB:** Android SDK API 21+ (Android 5.0 or higher)
+* **API Key:** An active API key for the AIVCO AI / Groq inference backend
+
+### 2. Clone the Repository
+```bash
+git clone [https://github.com/parikshit-koirala/cipher.git](https://github.com/parikshit-koirala/cipher.git)
+cd cipher
+```
+
+### 3. Install Dependencies
+```bash
+flutter pub get
+```
+
+### 4. Run on a Connected Android Device
+Connect your Android phone with **USB Debugging** enabled and run:
+```bash
+flutter devices
+flutter run -d <your-device-id>
+```
+
+### 5. Build Production Release APK
+To compile an optimized, lightweight production APK:
+```bash
+# Split per ABI (recommended for smallest download size)
+flutter build apk --release --split-per-abi
+
+# Or build a single universal APK
+flutter build apk --release
+```
+The compiled binary will be generated at:
+`build/app/outputs/flutter-apk/app-release.apk`
+
+---
+
+## 🎮 How to Play
+
+1. **Pick or Synthesize a Deck:** Choose a built-in deck from the library or tap **AI Generator!** to synthesize a fresh **AIVCO AI** deck[cite: 3].
+2. **Set Your Parameters:** Pick your player count (**2P – 6P**) and select a difficulty (**Casual**, **Party**, or **Hardcore**)[cite: 3].
+3. **Mount to Forehead:** One player holds the phone against their forehead facing the room.
+4. **Act & Shout:** Friends shout clues, mime, or act out the word on screen without saying the word itself.
+5. **Tilt to Score:**
+   * Guessed it right? **Tilt the phone DOWN** to score a point.
+   * Stuck on a tough card? **Tilt the phone UP** to pass.
+6. **Review the Breakdown:** When the timer hits zero, inspect your round score, conquered cards, and missed prompts!
+
+---
+
+## 🗺️ Roadmap
+
+- [x] Dynamic AIVCO AI deck generation with JSON mode enforcement
+- [x] Zero-Spoiler local encryption & edit-screen spoiler lock
+- [x] 2P to 6P dynamic card scaling
+- [ ] Custom round timer presets (30s, 60s, 90s, 120s)
+- [ ] Team vs. Team tournament bracket tracker
+- [ ] Offline fallback party pack expansion
+- [ ] QR Code deck sharing between friends' devices
+
+---
+
+## 🤝 Contributing
+
+Contributions, issues, and feature requests are welcome!
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'feat: add AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+Distributed under the **MIT License**. See `LICENSE` for more information.
+
+---
+
+<div align="center">
+  <b>Built with ⚡ by <a href="https://www.linkedin.com/in/parikshit-koirala-625237317">Parikshit Koirala</a></b><br/>
+  <i>Powered by Flutter & AIVCO AI</i>
+</div>
