@@ -31,7 +31,7 @@ void main() {
       expect(initialCount, isNonNegative);
     });
 
-    test('parseAndBuildDeck auto-pads short responses without throwing error', () {
+    test('parseAndBuildDeck throws clean exception when insufficient items returned, never using fake template fallbacks', () {
       final service = GroqDeckService();
       const rawJson = '''
 {
@@ -40,17 +40,18 @@ void main() {
   "items": ["Yttrium Barium", "Meissner Effect", "Zero Resistance"]
 }
 ''';
-      final deck = service.parseAndBuildDeck(
-        rawJson: rawJson,
-        fallbackTopic: 'Superconductors',
-        targetCardCount: 25,
+      expect(
+        () => service.parseAndBuildDeck(
+          rawJson: rawJson,
+          fallbackTopic: 'Superconductors',
+          targetCardCount: 25,
+        ),
+        throwsA(
+          predicate((e) =>
+              e.toString().contains('AI Generation failed — check connection & try again') &&
+              !e.toString().contains('Superconductors Hero')),
+        ),
       );
-
-      expect(deck.name, 'SUPERCONDUCTORS');
-      expect(deck.emoji, '');
-      expect(deck.items.length, greaterThanOrEqualTo(25));
-      expect(deck.items, contains('Meissner Effect'));
-      expect(deck.items, contains('Superconductors Hero'));
     });
 
     test('Missing API Key throws friendly offline error without mentioning .env or Groq', () async {
@@ -79,7 +80,10 @@ void main() {
 {
   "name": "60s-90s pop song mainly mj qeen beatles",
   "category": "Music",
-  "items": ["Billie Jean", "Bohemian Rhapsody", "Hey Jude", "Thriller", "Yesterday"]
+  "items": [
+    "Billie Jean", "Bohemian Rhapsody", "Hey Jude", "Thriller", "Yesterday",
+    "Beat It", "Radio Ga Ga", "Help", "Smooth Criminal", "Under Pressure"
+  ]
 }
 ''';
       final deck = service.parseAndBuildDeck(
@@ -100,7 +104,11 @@ void main() {
 {
   "name": "Party",
   "category": "Entertainment",
-  "items": ["Dance Battle", "bad xxx content", "Charades", "explicit porn stuff", "Karaoke"]
+  "items": [
+    "Dance Battle", "bad xxx content", "Charades", "explicit porn stuff", "Karaoke",
+    "Limbo", "Musical Chairs", "Trivia", "Pictionary", "Board Games", "Twister",
+    "Balloon Pop", "Sack Race", "Pinata"
+  ]
 }
 ''';
       final deck = service.parseAndBuildDeck(
@@ -112,6 +120,7 @@ void main() {
       expect(deck.items, contains('Dance Battle'));
       expect(deck.items, contains('Charades'));
       expect(deck.items, contains('Karaoke'));
+      expect(deck.items, contains('Balloon Pop'));
       expect(deck.items.any((item) => item.contains('xxx') || item.contains('porn')), isFalse);
     });
 
@@ -150,8 +159,8 @@ void main() {
       // Rule 5: Child-Safe guardrail
       expect(prompt, contains('CHILD-SAFE GUARDRAIL: Strictly 100% family-friendly'));
 
-      // Rule 7: JSON array of strings
-      expect(prompt, contains('OUTPUT REQUIREMENT: Return strictly valid JSON array of strings'));
+      // Rule 7: JSON object schema
+      expect(prompt, contains('OUTPUT REQUIREMENT: Return strictly a valid JSON object matching this schema:'));
 
       // Rule 8: Anti-template rule
       expect(prompt, contains('CRITICAL ANTI-TEMPLATE RULE'));

@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
@@ -14,9 +16,9 @@ class GroqDeckService {
   factory GroqDeckService() => _instance;
   GroqDeckService._internal();
 
-  static const String _defaultModel = 'openai/gpt-oss-120b';
+  static const String _defaultModel = 'llama-3.3-70b-versatile';
   static const List<String> _fallbackModels = [
-    'llama-3.3-70b-versatile',
+    'openai/gpt-oss-120b',
     'qwen/qwen3.8-27b',
     'openai/gpt-oss-20b',
   ];
@@ -252,6 +254,7 @@ class GroqDeckService {
     final responseContent = await _executeGroqCompletion(
       apiKey: apiKey,
       prompt: prompt,
+      topic: cleanTopic,
       onProgress: onProgress,
     );
 
@@ -308,6 +311,7 @@ class GroqDeckService {
     final rawJson = await _executeGroqCompletion(
       apiKey: apiKey,
       prompt: prompt,
+      topic: topic,
       temperature: 0.85,
       timeout: timeout,
     );
@@ -346,7 +350,8 @@ class GroqDeckService {
   Future<String> _executeGroqCompletion({
     required String apiKey,
     required String prompt,
-    double temperature = 0.85,
+    String topic = '',
+    double temperature = 0.7,
     Duration timeout = const Duration(seconds: 25),
     void Function(String step)? onProgress,
   }) async {
@@ -360,8 +365,11 @@ class GroqDeckService {
           'messages': [
             {'role': 'user', 'content': prompt},
           ],
-          'temperature': temperature,
+          'temperature': 0.7,
+          'response_format': {'type': 'json_object'},
         };
+
+        print('--> GROQ REQUEST ATTEMPT: model=$model, topic=$topic');
 
         final response = await http
             .post(
@@ -373,6 +381,14 @@ class GroqDeckService {
               body: jsonEncode(payload),
             )
             .timeout(timeout);
+
+        print('--> GROQ STATUS: ${response.statusCode}');
+        print('--> GROQ BODY: ${response.body}');
+
+        if (response.statusCode != 200) {
+          debugPrint(
+              '--> GROQ HTTP ERROR: status=${response.statusCode}, body=${response.body}');
+        }
 
         if (response.statusCode == 200) {
           final data = jsonDecode(utf8.decode(response.bodyBytes))
@@ -409,7 +425,9 @@ class GroqDeckService {
         }
 
         lastError = 'Service error (${response.statusCode})';
-      } catch (e) {
+      } catch (e, st) {
+        print('--> GROQ ERROR: $e');
+        print('--> STACK TRACE: $st');
         if (e is Exception &&
             (e.toString().contains('offline') ||
                 e.toString().contains('busy'))) {
@@ -450,7 +468,13 @@ STRICT ENTITY-ONLY RULES:
 4. COUNT & ANTI-REPETITION: Generate strictly $cardCount unique, highly recognizable items per request. Ensure zero duplicates, distinct sub-themes, and high variety.
 5. CHILD-SAFE GUARDRAIL: Strictly 100% family-friendly. Zero 18+, pornographic, drug, or harmful content. If user requests adult or violent content, fallback to safe party pop culture, animals, or movies.
 6. DECK NAME SUMMARIZATION RULE: Automatically summarize the core theme into a punchy, 1-word or 2-word UPPERCASE deck name (e.g. 'LEGENDS' or 'POP').
-7. OUTPUT REQUIREMENT: Return strictly valid JSON array of strings (["Item 1", "Item 2", ...]) with no markdown code block wrappers if possible, or clean JSON text.
+7. OUTPUT REQUIREMENT: Return strictly a valid JSON object matching this schema:
+{
+  "name": "UPPERCASE DECK NAME",
+  "category": "Category",
+  "items": ["Card 1", "Card 2", ...]
+}
+Never include markdown code block wrappers (e.g. no ```json). Output pure raw JSON only.
 8. CRITICAL ANTI-TEMPLATE RULE: Never use the user's input topic as a mandatory prefix or suffix for every card. If the user asks for 'MCU Avengers', do NOT output 'Watching mcu avengers' or 'Classic mcu avengers'. Output distinct, independent entity names, characters, items, or titles (e.g., 'Iron Man', 'Thor', 'Thanos', 'Shield', 'Mjolnir', 'Black Widow'). Each card must be entirely unique and diverse.
 ''';
   }
@@ -561,6 +585,8 @@ STRICT ENTITY-ONLY RULES:
     required String fallbackTopic,
     required int targetCardCount,
   }) {
+    print(
+        '--> PARSE DECK: fallbackTopic=$fallbackTopic, targetCardCount=$targetCardCount, rawJsonLength=${rawJson.length}');
     String cleanJson = rawJson.trim();
     if (cleanJson.startsWith('```json')) {
       cleanJson = cleanJson.substring(7);
@@ -577,18 +603,18 @@ STRICT ENTITY-ONLY RULES:
     try {
       decoded = jsonDecode(cleanJson);
     } catch (_) {
-      // Fallback: extract array or object if wrapped in conversational text
-      final arrayMatch = RegExp(r'\[[\s\S]*\]').firstMatch(cleanJson);
-      if (arrayMatch != null) {
+      // Fallback: extract object or array if wrapped in conversational text
+      final objectMatch = RegExp(r'\{[\s\S]*\}').firstMatch(cleanJson);
+      if (objectMatch != null) {
         try {
-          decoded = jsonDecode(arrayMatch.group(0)!);
+          decoded = jsonDecode(objectMatch.group(0)!);
         } catch (_) {}
       }
       if (decoded == null) {
-        final objectMatch = RegExp(r'\{[\s\S]*\}').firstMatch(cleanJson);
-        if (objectMatch != null) {
+        final arrayMatch = RegExp(r'\[[\s\S]*\]').firstMatch(cleanJson);
+        if (arrayMatch != null) {
           try {
-            decoded = jsonDecode(objectMatch.group(0)!);
+            decoded = jsonDecode(arrayMatch.group(0)!);
           } catch (_) {}
         }
       }
@@ -599,16 +625,16 @@ STRICT ENTITY-ONLY RULES:
     int colorValue = 4280391456;
     List<dynamic> rawItems = [];
 
-    if (decoded is List) {
-      rawItems = decoded;
-      rawName = fallbackTopic;
-    } else if (decoded is Map<String, dynamic>) {
+    if (decoded is Map<String, dynamic>) {
       rawName = decoded['name']?.toString() ?? fallbackTopic;
       category = decoded['category']?.toString().trim() ?? 'AI Custom';
       colorValue = decoded['colorValue'] is int
           ? decoded['colorValue'] as int
           : 4280391456;
       rawItems = decoded['items'] as List<dynamic>? ?? [];
+    } else if (decoded is List) {
+      rawItems = decoded;
+      rawName = fallbackTopic;
     }
 
     final name = _summarizeDeckTitle(rawName, fallbackTopic);
@@ -628,43 +654,14 @@ STRICT ENTITY-ONLY RULES:
       }
     }
 
-    // Creative auto-padding if fewer than 15 items returned so gameplay is never blocked
-    if (sanitizedItems.length < 15) {
-      final List<String> fallbackPatterns = [
-        '$fallbackTopic Hero',
-        '$fallbackTopic Villain',
-        '$fallbackTopic Sidekick',
-        '$fallbackTopic Origin',
-        '$fallbackTopic Artifact',
-        '$fallbackTopic Weapon',
-        '$fallbackTopic Costume',
-        '$fallbackTopic Vehicle',
-        '$fallbackTopic Mission',
-        '$fallbackTopic Battle',
-        '$fallbackTopic HQ',
-        '$fallbackTopic Team',
-        '$fallbackTopic Rival',
-        '$fallbackTopic Disguise',
-        '$fallbackTopic Power',
-        '$fallbackTopic Symbol',
-        '$fallbackTopic Prop',
-        '$fallbackTopic Catchphrase',
-        '$fallbackTopic Episode',
-        '$fallbackTopic Finale',
-        '$fallbackTopic Climax',
-        '$fallbackTopic Sequel',
-        '$fallbackTopic Cameo',
-        '$fallbackTopic Poster',
-        '$fallbackTopic Theme',
-      ];
-      for (final phrase in fallbackPatterns) {
-        final lower = phrase.toLowerCase();
-        if (!seen.contains(lower)) {
-          seen.add(lower);
-          sanitizedItems.add(phrase);
-        }
-        if (sanitizedItems.length >= 25) break;
-      }
+    print(
+        '--> PARSE DECK RESULT: rawCount=${rawItems.length}, sanitizedCount=${sanitizedItems.length}');
+
+    // If the API returns fewer than 10 valid sanitized items, fail cleanly without generating fake templates
+    if (sanitizedItems.length < 10) {
+      debugPrint(
+          '--> PARSE ERROR: Insufficient valid cards (${sanitizedItems.length} < 10)');
+      throw Exception('AI Generation failed — check connection & try again');
     }
 
     // Shuffle cards so every game starts with a random word sequence
