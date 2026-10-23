@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
@@ -248,6 +250,7 @@ class GroqDeckService {
     final responseContent = await _executeGroqCompletion(
       apiKey: apiKey,
       prompt: prompt,
+      cardCount: effectiveCardCount,
       onProgress: onProgress,
     );
 
@@ -304,6 +307,7 @@ class GroqDeckService {
     final rawJson = await _executeGroqCompletion(
       apiKey: apiKey,
       prompt: prompt,
+      cardCount: targetCount,
       temperature: 0.85,
       timeout: timeout,
     );
@@ -339,15 +343,18 @@ class GroqDeckService {
 
   /// Executes chat completion with Groq using llama-3.3-70b-versatile,
   /// with 1 automatic retry / fallback to llama-3.1-8b-instant on 429 rate limit,
-  /// structured JSON output, and 12-second timeout.
+  /// structured JSON output, dynamic 15-25s timeout, and verbose logging.
   Future<String> _executeGroqCompletion({
     required String apiKey,
     required String prompt,
+    int cardCount = 35,
     double temperature = 0.85,
-    Duration timeout = const Duration(seconds: 12),
+    Duration? timeout,
     void Function(String step)? onProgress,
   }) async {
     final candidateModels = [_defaultModel, _fallbackModel429];
+    final timeoutSeconds = cardCount > 40 ? 25 : 15;
+    final effectiveTimeout = timeout ?? Duration(seconds: timeoutSeconds);
 
     String? lastError;
     for (int attempt = 0; attempt < candidateModels.length; attempt++) {
@@ -365,6 +372,8 @@ class GroqDeckService {
           'response_format': {'type': 'json_object'},
         };
 
+        print('--> GROQ REQUEST: model=$model, targetCount=$cardCount');
+
         final response = await http
             .post(
               Uri.parse(_groqCompletionsUrl),
@@ -374,7 +383,15 @@ class GroqDeckService {
               },
               body: jsonEncode(payload),
             )
-            .timeout(timeout);
+            .timeout(effectiveTimeout);
+
+        print('--> GROQ STATUS: ${response.statusCode}');
+        print('--> GROQ BODY: ${response.body}');
+
+        if (response.statusCode != 200) {
+          debugPrint(
+              '--> GROQ HTTP ERROR: status=${response.statusCode}, body=${response.body}');
+        }
 
         if (response.statusCode == 200) {
           final data = jsonDecode(utf8.decode(response.bodyBytes))
@@ -403,7 +420,9 @@ class GroqDeckService {
         }
 
         lastError = 'Service error (${response.statusCode})';
-      } catch (e) {
+      } catch (e, st) {
+        print('--> GROQ ERROR: $e');
+        print('--> STACK TRACE: $st');
         if (e is Exception && e.toString().contains('offline')) {
           rethrow;
         }
@@ -684,6 +703,8 @@ STRICT ENTITY-ONLY RULES:
     required String fallbackTopic,
     required int targetCardCount,
   }) {
+    print(
+        '--> PARSE DECK: fallbackTopic=$fallbackTopic, targetCardCount=$targetCardCount, rawJsonLength=${rawJson.length}');
     String cleanJson = rawJson.trim();
     if (cleanJson.startsWith('```json')) {
       cleanJson = cleanJson.substring(7);
@@ -738,9 +759,13 @@ STRICT ENTITY-ONLY RULES:
 
     // Apply strict sanitization, deduplication, and A-Z prompt word filtering
     final sanitizedItems = sanitizeAndFilterCards(rawItems, fallbackTopic);
+    print(
+        '--> PARSE DECK RESULT: rawCount=${rawItems.length}, sanitizedCount=${sanitizedItems.length}');
 
     // If fewer than 10 valid items returned, fail cleanly without generating fake templates
     if (sanitizedItems.length < 10) {
+      debugPrint(
+          '--> PARSE ERROR: Insufficient valid cards (${sanitizedItems.length} < 10)');
       throw Exception('AI Generation failed — check connection & try again');
     }
 
