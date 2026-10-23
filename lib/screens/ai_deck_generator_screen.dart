@@ -48,12 +48,12 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
   static const List<({String label, String subtitle, IconData icon})> _vibes = [
     (
       label: 'Casual',
-      subtitle: 'Popular & relaxed',
+      subtitle: 'Popular & relatable',
       icon: Icons.spa_outlined,
     ),
     (
       label: 'Party',
-      subtitle: 'Fast & crowd-friendly',
+      subtitle: 'Fast & crowd-pleasing',
       icon: Icons.celebration_outlined,
     ),
     (
@@ -207,10 +207,23 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                deck.emoji,
-                style: const TextStyle(fontSize: 48),
-              ),
+              if (deck.emoji.isNotEmpty)
+                Text(
+                  deck.emoji,
+                  style: const TextStyle(fontSize: 48),
+                )
+              else
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: kYellow,
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(color: kInk, width: 2.5),
+                    boxShadow: kSmallShadow,
+                  ),
+                  child: const Icon(Icons.lock_rounded, size: 28, color: kInk),
+                ),
               const SizedBox(height: 10),
               Text(
                 '${deck.name} Encrypted!',
@@ -468,10 +481,12 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
                     const SizedBox(height: 8),
 
                     SizedBox(
-                      height: 38,
+                      height: 42,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         physics: const BouncingScrollPhysics(),
+                        clipBehavior: Clip.none,
+                        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
                         itemCount: _suggestions.length,
                         separatorBuilder: (_, _) => const SizedBox(width: 8),
                         itemBuilder: (context, index) {
@@ -657,16 +672,21 @@ class _AiDeckGeneratorScreenState extends State<AiDeckGeneratorScreen>
                                         color: kInk,
                                       ),
                                     ),
-                                    const SizedBox(height: 3),
-                                    Text(
-                                      vibe.subtitle,
-                                      textAlign: TextAlign.center,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: GoogleFonts.dmSans(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                        color: kInkDim,
+                                    const SizedBox(height: 4),
+                                    SizedBox(
+                                      height: 26,
+                                      child: Center(
+                                        child: Text(
+                                          vibe.subtitle,
+                                          textAlign: TextAlign.center,
+                                          maxLines: 2,
+                                          style: GoogleFonts.dmSans(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                            color: kInkDim,
+                                            height: 1.15,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ],

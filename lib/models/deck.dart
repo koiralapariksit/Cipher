@@ -58,13 +58,42 @@ class Deck {
     );
   }
 
+  static const String _cipherPrefix = 'cipher:';
+  static const int _xorMask = 0x5A;
+
+  /// Obfuscates an item using Base64 + XOR cipher so AI-generated cards
+  /// are protected against spoilers in local storage.
+  static String _obfuscate(String text) {
+    final bytes = utf8.encode(text);
+    final xorBytes = bytes.map((b) => b ^ _xorMask).toList();
+    return '$_cipherPrefix${base64Url.encode(xorBytes)}';
+  }
+
+  /// Deobfuscates a cipher item back to plain text. Legacy or unencrypted items
+  /// pass through untouched.
+  static String _deobfuscate(String text) {
+    if (!text.startsWith(_cipherPrefix)) return text;
+    try {
+      final raw = text.substring(_cipherPrefix.length);
+      final xorBytes = base64Url.decode(raw);
+      final bytes = xorBytes.map((b) => b ^ _xorMask).toList();
+      return utf8.decode(bytes);
+    } catch (_) {
+      return text;
+    }
+  }
+
   Map<String, dynamic> toMap() {
+    final serializedItems = isAiGenerated
+        ? items.map(_obfuscate).toList()
+        : items;
+
     return {
       'id': id,
       'name': name,
       'emoji': emoji,
       'colorValue': colorValue,
-      'items': items,
+      'items': serializedItems,
       'isCustom': isCustom,
       'category': category,
       if (originalPrompt != null) 'originalPrompt': originalPrompt,
@@ -75,15 +104,18 @@ class Deck {
   Map<String, dynamic> toJson() => toMap();
 
   factory Deck.fromMap(Map<String, dynamic> map) {
+    final rawItems = (map['items'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        [];
+    final decodedItems = rawItems.map(_deobfuscate).toList();
+
     return Deck(
       id: map['id'] as String? ?? map['name'] as String? ?? '',
       name: map['name'] as String? ?? '',
       emoji: map['emoji'] as String? ?? '',
       colorValue: (map['colorValue'] as num?)?.toInt() ?? 0xFF38BDF8,
-      items: (map['items'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          [],
+      items: decodedItems,
       isCustom: map['isCustom'] as bool? ?? true,
       category: map['category'] as String? ?? 'Custom',
       originalPrompt: map['originalPrompt'] as String?,

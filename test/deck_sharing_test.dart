@@ -227,5 +227,54 @@ void main() {
       expect(retrieved.name, contains('60s-90s POPULAR SONGS'));
     });
   });
+
+  group('Zero-Spoiler Encryption & Decryption', () {
+    test('AI deck items are obfuscated in toMap/toJson and seamless in fromMap/fromJson', () {
+      const aiDeck = Deck(
+        id: 'custom_ai_123',
+        name: 'MCU AVENGERS',
+        emoji: '',
+        colorValue: 0xFF2F5BFF,
+        category: 'Pop Culture',
+        isCustom: true,
+        isAiGenerated: true,
+        items: ['Iron Man', 'Thor', 'Thanos', 'Black Widow', 'Mjolnir'],
+      );
+
+      final jsonMap = aiDeck.toJson();
+      final serializedItems = jsonMap['items'] as List<dynamic>;
+
+      // Ensure raw cards are NOT stored in plain text
+      for (final item in serializedItems) {
+        expect(item.toString().startsWith('cipher:'), isTrue);
+        expect(item.toString().contains('Iron Man'), isFalse);
+        expect(item.toString().contains('Thanos'), isFalse);
+      }
+
+      // Ensure deserialization restores plain text seamlessly in memory
+      final restoredDeck = Deck.fromJson(jsonMap);
+      expect(restoredDeck.isAiGenerated, isTrue);
+      expect(restoredDeck.items, ['Iron Man', 'Thor', 'Thanos', 'Black Widow', 'Mjolnir']);
+    });
+
+    test('Non-AI custom decks remain un-obfuscated in serialization', () {
+      const manualDeck = Deck(
+        id: 'custom_manual_456',
+        name: 'Handmade Deck',
+        emoji: '🎯',
+        colorValue: 0xFFFF7A1A,
+        category: 'Custom',
+        isCustom: true,
+        isAiGenerated: false,
+        items: ['Card A', 'Card B'],
+      );
+
+      final jsonMap = manualDeck.toJson();
+      expect(jsonMap['items'], ['Card A', 'Card B']);
+
+      final restored = Deck.fromJson(jsonMap);
+      expect(restored.items, ['Card A', 'Card B']);
+    });
+  });
 }
 

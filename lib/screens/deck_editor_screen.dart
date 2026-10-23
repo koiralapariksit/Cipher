@@ -23,6 +23,7 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
   final _wordInputController = TextEditingController();
   final _aiTopicController = TextEditingController();
   bool _isAiGenerating = false;
+  bool _isSpoilerRevealed = false;
 
   late String _selectedEmoji;
   late int _selectedColor;
@@ -79,6 +80,7 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
   @override
   void initState() {
     super.initState();
+    _isSpoilerRevealed = widget.deck?.isAiGenerated != true;
     if (widget.deck != null) {
       _nameController.text = widget.deck!.name;
       _selectedEmoji = widget.deck!.emoji;
@@ -336,6 +338,8 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
       items: _words,
       isCustom: true,
       category: _selectedCategory,
+      originalPrompt: widget.deck?.originalPrompt,
+      isAiGenerated: widget.deck?.isAiGenerated ?? false,
     );
 
     await _storage.saveDeck(deck);
@@ -403,32 +407,38 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Transform.rotate(
-                      angle: -2 * math.pi / 180,
-                      child: RichText(
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: isEditing ? 'Edit Deck' : 'New Deck',
-                              style: GoogleFonts.bowlbyOne(
-                                fontSize: 30,
-                                color: kCream,
-                                height: 0.95,
-                              ),
+                    Expanded(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Transform.rotate(
+                          angle: -2 * math.pi / 180,
+                          child: RichText(
+                            text: TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: isEditing ? 'Edit Deck' : 'New Deck',
+                                  style: GoogleFonts.bowlbyOne(
+                                    fontSize: 28,
+                                    color: kCream,
+                                    height: 0.95,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: '!',
+                                  style: GoogleFonts.bowlbyOne(
+                                    fontSize: 28,
+                                    color: kYellow,
+                                    height: 0.95,
+                                  ),
+                                ),
+                              ],
                             ),
-                            TextSpan(
-                              text: '!',
-                              style: GoogleFonts.bowlbyOne(
-                                fontSize: 30,
-                                color: kYellow,
-                                height: 0.95,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 8),
                     if (isEditing) ...[
                       GestureDetector(
                         onTap: _deleteDeckConfirm,
@@ -567,7 +577,7 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
                               ),
                             ],
                           ),
-                          if (_words.isNotEmpty)
+                          if (_words.isNotEmpty && _isSpoilerRevealed)
                             GestureDetector(
                               onTap: () => setState(() => _words.clear()),
                               child: Container(
@@ -591,7 +601,9 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      if (_words.isEmpty)
+                      if (!_isSpoilerRevealed)
+                        _buildSpoilerGuardCard()
+                      else if (_words.isEmpty)
                         Container(
                           padding: const EdgeInsets.symmetric(vertical: 36),
                           decoration: BoxDecoration(
@@ -734,81 +746,159 @@ class _DeckEditorScreenState extends State<DeckEditorScreen> {
               ),
 
               // ── Bottom Input Bar for Single or Bulk Words ──
-              Container(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                decoration: const BoxDecoration(
-                  color: kCream,
-                  border: Border(
-                    top: BorderSide(color: kInk, width: 3.0),
+              if (_isSpoilerRevealed)
+                Container(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                  decoration: const BoxDecoration(
+                    color: kCream,
+                    border: Border(
+                      top: BorderSide(color: kInk, width: 3.0),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(99),
+                            border: Border.all(color: kInk, width: 2.0),
+                            boxShadow: kSmallShadow,
+                          ),
+                          child: TextField(
+                            controller: _wordInputController,
+                            enableSuggestions: false,
+                            autocorrect: false,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: kInk,
+                            ),
+                            cursorColor: kInk,
+                            textInputAction: TextInputAction.done,
+                            onSubmitted: (_) => _addWordsFromInput(),
+                            decoration: InputDecoration(
+                              hintText:
+                                  'Add word or paste list (comma / newline)...',
+                              hintStyle: GoogleFonts.dmSans(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: kInkDim,
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 14),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      GestureDetector(
+                        onTap: _addWordsFromInput,
+                        child: Container(
+                          height: 48,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          decoration: BoxDecoration(
+                            color: kYellow,
+                            borderRadius: BorderRadius.circular(99),
+                            border: Border.all(color: kInk, width: 2.0),
+                            boxShadow: kSmallShadow,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            'ADD',
+                            style: GoogleFonts.bowlbyOne(
+                              fontSize: 13,
+                              color: kInk,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(99),
-                          border: Border.all(color: kInk, width: 2.0),
-                          boxShadow: kSmallShadow,
-                        ),
-                        child: TextField(
-                          controller: _wordInputController,
-                          enableSuggestions: false,
-                          autocorrect: false,
-                          style: GoogleFonts.dmSans(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: kInk,
-                          ),
-                          cursorColor: kInk,
-                          textInputAction: TextInputAction.done,
-                          onSubmitted: (_) => _addWordsFromInput(),
-                          decoration: InputDecoration(
-                            hintText:
-                                'Add word or paste list (comma / newline)...',
-                            hintStyle: GoogleFonts.dmSans(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: kInkDim,
-                            ),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 14),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    GestureDetector(
-                      onTap: _addWordsFromInput,
-                      child: Container(
-                        height: 48,
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        decoration: BoxDecoration(
-                          color: kYellow,
-                          borderRadius: BorderRadius.circular(99),
-                          border: Border.all(color: kInk, width: 2.0),
-                          boxShadow: kSmallShadow,
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          'ADD',
-                          style: GoogleFonts.bowlbyOne(
-                            fontSize: 13,
-                            color: kInk,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSpoilerGuardCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+      decoration: BoxDecoration(
+        color: kCream,
+        borderRadius: kAsymmetricRadius,
+        border: Border.all(color: kInk, width: 3.0),
+        boxShadow: kCardShadow,
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: kYellow,
+              borderRadius: BorderRadius.circular(99),
+              border: Border.all(color: kInk, width: 2.5),
+              boxShadow: kSmallShadow,
+            ),
+            child: const Icon(Icons.lock_rounded, size: 28, color: kInk),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'ZERO-SPOILER GUARD',
+            style: GoogleFonts.bowlbyOne(
+              fontSize: 16,
+              color: kInk,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'This deck was created by AI with sealed cards to prevent guessing spoilers. Cards are hidden so you can play without knowing the words beforehand.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.dmSans(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: kInkDim,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 20),
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.mediumImpact();
+              setState(() {
+                _isSpoilerRevealed = true;
+              });
+            },
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: kPink,
+                borderRadius: BorderRadius.circular(99),
+                border: Border.all(color: kInk, width: 2.5),
+                boxShadow: kSmallShadow,
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                'TAP TO UNLOCK & EDIT (SPOILERS)',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.bowlbyOne(
+                  fontSize: 12.5,
+                  color: kCream,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
