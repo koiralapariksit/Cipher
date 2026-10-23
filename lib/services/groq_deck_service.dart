@@ -250,7 +250,7 @@ class GroqDeckService {
     );
 
     // Phase 4: Query Groq API with Model Resilience Fallback
-    onProgress?.call('Synthesizing cards with Groq AI...');
+    onProgress?.call('Synthesizing cards with AIVCO AI...');
     final responseContent = await _executeGroqCompletion(
       apiKey: apiKey,
       prompt: prompt,
